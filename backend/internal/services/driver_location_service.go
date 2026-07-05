@@ -54,8 +54,9 @@ func (s *DriverLocationService) GetCurrent(ctx context.Context, driverID string)
 func (s *DriverLocationService) AssertOrderAccess(ctx context.Context, orderID, userID, role string) *apperror.AppError {
 	var ownerUserID string
 	var driverID *string
-	err := s.db.WithContext(ctx).Raw(`SELECT user_id, driver_id FROM orders WHERE id = ?`, orderID).
-		Row().Scan(&ownerUserID, &driverID)
+	var vendorID string
+	err := s.db.WithContext(ctx).Raw(`SELECT user_id, driver_id, vendor_id FROM orders WHERE id = ?`, orderID).
+		Row().Scan(&ownerUserID, &driverID, &vendorID)
 	if err != nil {
 		return apperror.NotFound("order")
 	}
@@ -64,6 +65,12 @@ func (s *DriverLocationService) AssertOrderAccess(ctx context.Context, orderID, 
 	case "driver":
 		if driverID == nil || *driverID != userID {
 			return apperror.Forbidden("not the assigned driver for this order")
+		}
+	case "vendor_owner":
+		var vendorOwnerUserID string
+		err := s.db.WithContext(ctx).Raw(`SELECT owner_user_id FROM vendors WHERE id = ?`, vendorID).Scan(&vendorOwnerUserID).Error
+		if err != nil || vendorOwnerUserID != userID {
+			return apperror.Forbidden("not the owner of the vendor for this order")
 		}
 	default:
 		if ownerUserID != userID {

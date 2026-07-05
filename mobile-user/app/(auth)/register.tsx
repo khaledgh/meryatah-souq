@@ -34,7 +34,7 @@ export default function RegisterScreen() {
         password,
         preferredLocale: i18n.language,
       })
-      router.replace('/(app)/home')
+      router.replace('/home')
     } catch (err) {
       setError(toApiError(err).user_message)
     } finally {

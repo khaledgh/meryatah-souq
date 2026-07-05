@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from '../src/features/auth/auth-context'
+import { CartProvider } from '../src/features/cart/cart-context'
 import '../src/i18n/config'
 import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
 
@@ -28,8 +29,10 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <LocaleBootstrap />
           <AuthProvider>
-            <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <CartProvider>
+              <StatusBar style="auto" />
+              <Stack screenOptions={{ headerShown: false }} />
+            </CartProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

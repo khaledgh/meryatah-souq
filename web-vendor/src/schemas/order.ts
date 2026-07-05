@@ -2,6 +2,15 @@ import { z } from 'zod'
 
 export const orderStatusSchema = z.enum(['pending', 'accepted', 'preparing', 'on_the_way', 'delivered', 'cancelled'])
 
+export const orderItemSchema = z.object({
+  id: z.string(),
+  order_id: z.string(),
+  product_id: z.string(),
+  name: z.string(),
+  unit_price_usd: z.number(),
+  quantity: z.number(),
+})
+
 export const orderSchema = z.object({
   id: z.string(),
   user_id: z.string(),
@@ -14,6 +23,9 @@ export const orderSchema = z.object({
   scheduled_for: z.string().nullable().optional(),
   placed_at: z.string(),
   delivered_at: z.string().nullable().optional(),
+  delivery_longitude: z.number().nullable().optional(),
+  delivery_latitude: z.number().nullable().optional(),
+  items: z.array(orderItemSchema).nullable().optional(),
 })
 
 export const orderListSchema = z.object({

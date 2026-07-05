@@ -174,6 +174,7 @@ func (s *OrderService) ListForVendor(ctx context.Context, vendorID string, statu
 	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: list for vendor: %w", err))
 	}
+	s.populateOrderItems(ctx, orders)
 	return orders, nil
 }
 
@@ -220,6 +221,7 @@ func (s *OrderService) AdminListAll(ctx context.Context, filter AdminOrderFilter
 	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: admin list all: %w", err))
 	}
+	s.populateOrderItems(ctx, orders)
 	return orders, nil
 }
 
@@ -230,6 +232,7 @@ func (s *OrderService) ListForUser(ctx context.Context, userID string) ([]models
 		Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: list for user: %w", err))
 	}
+	s.populateOrderItems(ctx, orders)
 	return orders, nil
 }
 
@@ -244,5 +247,30 @@ func (s *OrderService) GetForUser(ctx context.Context, userID, orderID string) (
 	if o.ID == "" {
 		return nil, apperror.NotFound("order")
 	}
+	var items []models.OrderItem
+	if err := s.db.WithContext(ctx).Where("order_id = ?", o.ID).Find(&items).Error; err == nil {
+		o.Items = items
+	}
 	return &o, nil
+}
+
+// Helper to batch populate order items to prevent N+1 queries.
+func (s *OrderService) populateOrderItems(ctx context.Context, orders []models.Order) {
+	if len(orders) == 0 {
+		return
+	}
+	orderIDs := make([]string, len(orders))
+	for i, o := range orders {
+		orderIDs[i] = o.ID
+	}
+	var allItems []models.OrderItem
+	if err := s.db.WithContext(ctx).Where("order_id IN ?", orderIDs).Find(&allItems).Error; err == nil {
+		itemsByOrder := make(map[string][]models.OrderItem)
+		for _, item := range allItems {
+			itemsByOrder[item.OrderID] = append(itemsByOrder[item.OrderID], item)
+		}
+		for i := range orders {
+			orders[i].Items = itemsByOrder[orders[i].ID]
+		}
+	}
 }

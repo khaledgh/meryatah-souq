@@ -1,0 +1,38 @@
+export const colors = {
+  primary: '#4CAF50', // Grofast fresh green
+  primaryLight: '#E8F5E9',
+  primaryDark: '#388E3C',
+  white: '#FFFFFF',
+  black: '#000000',
+  gray: {
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#E5E7EB',
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+    600: '#4B5563',
+    700: '#374151',
+    800: '#1F2937',
+    950: '#030712',
+  },
+  success: '#10B981',
+  successLight: '#D1FAE5',
+  error: '#EF4444',
+  errorLight: '#FEE2E2',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
+  brand: {
+    50: '#f0fdf4',
+    100: '#dcfce7',
+    200: '#bbf7d0',
+    300: '#86efac',
+    400: '#4ade80',
+    500: '#22c55e',
+    600: '#16a34a',
+    700: '#15803d',
+    800: '#166534',
+    900: '#14532d',
+    950: '#052e16',
+  }
+}

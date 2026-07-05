@@ -34,7 +34,7 @@ export default function PhoneScreen() {
 
   const handleSkip = async () => {
     await bypassAuth()
-    router.replace('/(app)/home')
+    router.replace('/home')
   }
 
   return (

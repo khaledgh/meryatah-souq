@@ -37,7 +37,7 @@ export default function OtpScreen() {
     try {
       const result = await verifyOtp(phone, code)
       if (result.kind === 'login') {
-        router.replace('/(app)/home')
+        router.replace('/home')
       } else {
         router.replace({ pathname: '/(auth)/register', params: { token: result.verificationToken } })
       }

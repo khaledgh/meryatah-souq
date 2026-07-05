@@ -38,6 +38,7 @@ type Order struct {
 	// silently breaks GORM's raw-SQL Scan destination mapping).
 	DeliveryLongitude float64 `gorm:"column:delivery_longitude" json:"delivery_longitude"`
 	DeliveryLatitude  float64 `gorm:"column:delivery_latitude" json:"delivery_latitude"`
+	Items             []OrderItem `gorm:"-" json:"items,omitempty"`
 }
 
 func (Order) TableName() string { return "orders" }

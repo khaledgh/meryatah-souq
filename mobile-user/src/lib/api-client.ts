@@ -1,5 +1,4 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import Constants from 'expo-constants'
 
 import i18n from '../i18n/config'
 import { apiErrorSchema, type ApiError } from '../types/api-error'
@@ -11,7 +10,7 @@ import {
   setRefreshToken,
 } from './auth-storage'
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
 
 export const apiClient = axios.create({ baseURL: BASE_URL })
 

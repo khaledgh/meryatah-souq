@@ -24,7 +24,7 @@ export default function LanguageScreen() {
       ])
       return
     }
-    router.replace('/(auth)/phone')
+    router.replace('/welcome')
   }
 
   return (
