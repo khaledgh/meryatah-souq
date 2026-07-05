@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Neutralize the browser's blue/yellow autofill background so saved
+   credentials match our field styling instead of the UA default. */
+.field-control:-webkit-autofill,
+.field-control:-webkit-autofill:hover,
+.field-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: theme('colors.gray.900');
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .field-control:-webkit-autofill,
+  .field-control:-webkit-autofill:hover,
+  .field-control:-webkit-autofill:focus {
+    -webkit-text-fill-color: theme('colors.gray.100');
+  }
+}

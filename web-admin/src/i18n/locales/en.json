@@ -1,0 +1,211 @@
+{
+  "app": {
+    "name": "Meryata Souq Admin",
+    "tagline": "Super Admin Dashboard"
+  },
+  "nav": {
+    "overview": "Overview",
+    "vendors": "Vendors",
+    "drivers": "Drivers",
+    "users": "Users",
+    "bannerAds": "Banner Ads",
+    "coupons": "Coupons",
+    "settings": "System Settings",
+    "currencies": "Currencies & Rates",
+    "localization": "Localization",
+    "orders": "Orders",
+    "pushBroadcast": "Push Broadcast",
+    "auditLog": "Audit Log",
+    "vendorApplications": "Vendor Onboarding",
+    "logout": "Log out",
+    "groups": {
+      "overview": "Overview",
+      "operations": "Operations",
+      "marketing": "Marketing",
+      "platform": "Platform"
+    }
+  },
+  "auth": {
+    "phoneLabel": "Phone number",
+    "passwordLabel": "Password",
+    "loginButton": "Sign in",
+    "loginError": "Unable to sign in. Check your phone and password.",
+    "loginTitle": "Super Admin sign-in"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "empty": "Nothing to show yet.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "active": "Active",
+    "inactive": "Inactive",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "actions": "Actions",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "name": "Name",
+    "code": "Code",
+    "category": "Category",
+    "status": "Status",
+    "phoneVerified": "Phone verified",
+    "resetLockout": "Reset lockout",
+    "vendorIdOptional": "Vendor ID (optional)"
+  },
+  "vendors": {
+    "addVendor": "Add vendor",
+    "commissionPct": "Commission %",
+    "scheduling": "Scheduling",
+    "profile": "Profile",
+    "timezone": "Timezone",
+    "address": "Address",
+    "displayCurrency": "Display currency",
+    "commissionOverride": "Commission override",
+    "commissionOverrideHint": "Leave blank to use the platform default.",
+    "appDefault": "App default",
+    "schedulingAllowedLabel": "Scheduling allowed (admin grant)",
+    "schedulingEnabledHint": "Vendor-enabled: {{value}} (set by the vendor, only available once granted here)"
+  },
+  "bannerAds": {
+    "image": "Image",
+    "target": "Target",
+    "platformWide": "Platform-wide",
+    "paid": "Paid",
+    "priority": "Priority",
+    "createTitle": "Create banner ad",
+    "targetUrl": "Target URL"
+  },
+  "settings": {
+    "description": "Changes apply live, no restart required.",
+    "appConfig": "App config",
+    "featureFlags": "Feature flags"
+  },
+  "currencies": {
+    "symbol": "Symbol",
+    "rate": "Rate",
+    "createTitle": "Add currency",
+    "decimals": "Decimals"
+  },
+  "localization": {
+    "locales": "Locales",
+    "rtl": "RTL",
+    "default": "Default",
+    "setDefault": "Set default",
+    "strings": "Strings",
+    "addLocale": "Add locale",
+    "stringsFor": "Strings for {{locale}}",
+    "namespace": "Namespace",
+    "key": "Key",
+    "value": "Value",
+    "missingKeyReport": "Missing-key report",
+    "missingKeyReportHint": "Keys present for the default locale but absent elsewhere.",
+    "noMissingKeys": "No missing keys."
+  },
+  "orders": {
+    "placed": "Placed",
+    "vendor": "Vendor",
+    "total": "Total",
+    "driver": "Driver",
+    "scheduled": "Scheduled",
+    "asap": "ASAP",
+    "allStatuses": "All statuses",
+    "scheduledOnly": "Scheduled only"
+  },
+  "orderStatus": {
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "preparing": "Preparing",
+    "on_the_way": "On the way",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
+  "pushBroadcast": {
+    "description": "Send an immediate push notification to a role or everyone.",
+    "audience": "Audience",
+    "allUsers": "All users",
+    "users": "Users",
+    "vendors": "Vendors",
+    "drivers": "Drivers",
+    "title": "Title",
+    "body": "Body",
+    "send": "Send broadcast",
+    "sentResult": "Sent to {{count}} recipients."
+  },
+  "auditLog": {
+    "time": "Time",
+    "actor": "Actor",
+    "role": "Role",
+    "action": "Action",
+    "entity": "Entity",
+    "ip": "IP",
+    "actionPlaceholder": "e.g. user.login",
+    "entityPlaceholder": "e.g. orders",
+    "actorId": "Actor ID",
+    "showingCount": "Showing {{shown}} of {{total}} matching entries. Narrow your filters to see more specific results."
+  },
+  "overview": {
+    "description": "Snapshot of platform activity.",
+    "activeVendors": "Active vendors",
+    "todaysOrders": "Today's orders",
+    "gmv": "GMV (USD)",
+    "commissionEarned": "Commission earned",
+    "requiresAggregates": "Requires backend aggregates endpoint"
+  },
+  "coupons": {
+    "code": "Code",
+    "vendor": "Vendor",
+    "global": "Global",
+    "type": "Type",
+    "value": "Value",
+    "redemptions": "Redemptions",
+    "expires": "Expires",
+    "never": "Never",
+    "createTitle": "Create coupon",
+    "maxRedemptions": "Max redemptions",
+    "typePercent": "Percent",
+    "typeFixed": "Fixed"
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  },
+  "drivers": {
+    "createTitle": "Add driver",
+    "createHint": "Provisions a driver account. They sign in with this phone via OTP.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "create": "Create driver"
+  },
+  "vendorApplications": {
+    "title": "Vendor Onboarding",
+    "description": "Review and approve or reject prospective vendor applications.",
+    "business": "Business",
+    "contact": "Contact",
+    "location": "Location",
+    "submitted": "Submitted",
+    "status": "Status",
+    "statusValues": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "emptyForStatus": {
+      "pending": "No pending applications.",
+      "approved": "No approved applications yet.",
+      "rejected": "No rejected applications."
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "approvedNotice": "Vendor created successfully.",
+    "viewVendor": "View vendor",
+    "rejectTitle": "Reject application: {{name}}",
+    "rejectDescription": "This will notify the applicant that their vendor application was not approved.",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "Explain why this application is being rejected",
+    "confirmReject": "Confirm reject"
+  }
+}

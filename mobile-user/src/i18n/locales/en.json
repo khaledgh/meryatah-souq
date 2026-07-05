@@ -1,0 +1,54 @@
+{
+  "app": {
+    "name": "Meryata Souq"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "empty": "Nothing here yet.",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "back": "Back"
+  },
+  "language": {
+    "title": "Choose your language",
+    "subtitle": "You can change this later in Settings.",
+    "english": "English",
+    "arabic": "العربية",
+    "reloadTitle": "Restart required",
+    "reloadMessage": "The app needs to restart to switch text direction.",
+    "reloadConfirm": "Restart now"
+  },
+  "auth": {
+    "phoneTitle": "Enter your phone number",
+    "phoneSubtitle": "We'll send you a verification code.",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "+961 …",
+    "sendCode": "Send code",
+    "skipForNow": "Skip for now",
+    "otpTitle": "Enter the code",
+    "otpSubtitle": "Sent to {{phone}}.",
+    "otpLabel": "Verification code",
+    "verify": "Verify",
+    "resend": "Resend code",
+    "resendIn": "Resend in {{seconds}}s",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Just a few details to finish.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "createAccount": "Create account"
+  },
+  "home": {
+    "greeting": "Hi there",
+    "deliverTo": "Deliver to",
+    "setLocation": "Set location",
+    "searchPlaceholder": "Search stores & products",
+    "nearby": "Nearby stores",
+    "noVendors": "No stores near this location yet.",
+    "open": "Open",
+    "closed": "Closed",
+    "kmAway": "{{km}} km away"
+  }
+}

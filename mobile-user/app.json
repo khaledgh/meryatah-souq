@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Meryata Souq",
+    "slug": "meryata-souq-user",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "meryatasouq",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "extra": {
+      "apiBaseUrl": "http://localhost:8080/api/v1"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.meryatasouq.user"
+    },
+    "android": {
+      "package": "com.meryatasouq.user"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

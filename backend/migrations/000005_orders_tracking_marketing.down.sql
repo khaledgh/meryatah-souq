@@ -1,0 +1,8 @@
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS fk_orders_coupon;
+DROP TABLE IF EXISTS coupons;
+DROP TABLE IF EXISTS banner_ads;
+DROP TABLE IF EXISTS ratings;
+DROP TABLE IF EXISTS driver_locations;
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TYPE IF EXISTS order_status;

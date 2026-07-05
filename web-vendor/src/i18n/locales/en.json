@@ -1,0 +1,239 @@
+{
+  "app": {
+    "name": "Meryata Souq",
+    "tagline": "Vendor Dashboard"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "storeProfile": "Store Profile",
+    "storeHours": "Store Hours",
+    "scheduling": "Scheduling",
+    "categories": "Categories",
+    "products": "Products",
+    "orders": "Orders",
+    "coupons": "Coupons",
+    "earnings": "Earnings",
+    "account": "Account",
+    "logout": "Log out",
+    "groups": {
+      "overview": "Overview",
+      "store": "Store",
+      "catalog": "Catalog",
+      "sales": "Sales",
+      "account": "Account"
+    }
+  },
+  "auth": {
+    "loginTitle": "Vendor sign-in",
+    "phonePrompt": "Enter your phone number to receive a login code.",
+    "codePrompt": "Enter the code sent to {{phone}}.",
+    "phoneLabel": "Phone number",
+    "codeLabel": "Verification code",
+    "sendCode": "Send code",
+    "verify": "Verify & sign in",
+    "changePhone": "Use a different number",
+    "errors": {
+      "no-vendor-account": "No vendor account is registered for this number.",
+      "wrong-role": "This number is not a vendor account."
+    }
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "empty": "Nothing to show yet.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Status",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "saved": "Saved.",
+    "comingSoon": "This page is coming soon."
+  },
+  "profile": {
+    "title": "Store Profile",
+    "description": "Your store's public details. Changes are visible to customers.",
+    "storeName": "Store name",
+    "storeNameHint": "Shown to customers in the active language.",
+    "nameForLocale": "Name ({{locale}})",
+    "category": "Category",
+    "address": "Address",
+    "timezone": "Timezone",
+    "displayCurrency": "Display currency",
+    "logo": "Logo",
+    "uploadLogo": "Upload logo",
+    "location": "Location",
+    "coordinates": "Coordinates",
+    "status": "Status"
+  },
+  "hours": {
+    "title": "Store Hours",
+    "description": "Weekly opening hours, in your store's timezone. These drive the Open/Closed badge customers see.",
+    "weeklyHours": "Weekly hours",
+    "day": "Day",
+    "open": "Open",
+    "close": "Close",
+    "closed": "Closed",
+    "overrides": "Date overrides & holidays",
+    "overridesHint": "Override a specific date — a holiday closure or special hours.",
+    "date": "Date",
+    "note": "Note",
+    "addOverride": "Add override",
+    "markClosed": "Closed all day",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    }
+  },
+  "scheduling": {
+    "title": "Scheduling",
+    "description": "Let customers place orders for a future time slot.",
+    "notAllowed": "Scheduled ordering has not been enabled for your store by the platform admin. Contact support to request it.",
+    "enableToggle": "Enable scheduled ordering",
+    "config": "Slot configuration",
+    "slotMinutes": "Slot length (minutes)",
+    "leadMinutes": "Lead time (minutes)",
+    "maxDaysAhead": "Max days ahead",
+    "maxPerSlot": "Max orders per slot",
+    "saveConfig": "Save configuration"
+  },
+  "categories": {
+    "title": "Categories",
+    "description": "Group your products. Categories appear as tabs on your store page.",
+    "name": "Name",
+    "sortOrder": "Sort order",
+    "empty": "No categories yet. Create one below.",
+    "createTitle": "Add category",
+    "nameEn": "Name (EN)",
+    "nameAr": "Name (AR)",
+    "confirmDelete": "Delete this category? Products in it will become uncategorized."
+  },
+  "products": {
+    "title": "Products",
+    "addProduct": "Add product",
+    "empty": "No products yet. Add your first product.",
+    "image": "Image",
+    "name": "Name",
+    "price": "Price",
+    "stock": "Stock",
+    "confirmDelete": "Delete this product? This cannot be undone.",
+    "newTitle": "New product",
+    "editTitle": "Edit product",
+    "backToList": "Back to products",
+    "details": "Details",
+    "nameEn": "Name (EN)",
+    "nameAr": "Name (AR)",
+    "descEn": "Description (EN)",
+    "descAr": "Description (AR)",
+    "priceUsd": "Price (USD)",
+    "converted": "Displayed to customers as",
+    "category": "Category",
+    "noCategory": "No category",
+    "images": "Images",
+    "imagesHint": "The first image is used as the product thumbnail.",
+    "noImages": "No images yet.",
+    "uploadImage": "Upload image",
+    "imagesAfterSave": "Save the product first, then add images."
+  },
+  "orderStatus": {
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "preparing": "Preparing",
+    "on_the_way": "On the way",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
+  "orders": {
+    "title": "Orders",
+    "description": "Incoming and active orders. Move each order through its stages.",
+    "order": "Order",
+    "placed": "Placed",
+    "total": "Total",
+    "fulfillment": "Fulfillment",
+    "asap": "ASAP",
+    "driver": "Driver",
+    "empty": "No orders here yet.",
+    "tabs": {
+      "all": "All"
+    },
+    "transitions": {
+      "accepted": "Accept",
+      "preparing": "Start preparing",
+      "on_the_way": "Out for delivery",
+      "delivered": "Mark delivered",
+      "cancelled": "Cancel"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Today's activity at a glance.",
+    "todayOrders": "Today's orders",
+    "todayRevenue": "Today's revenue",
+    "todayCommission": "Commission",
+    "openOrders": "Open orders",
+    "statusBreakdown": "Orders by status",
+    "viewOrders": "View orders",
+    "noOrders": "No orders yet.",
+    "lifetimeDelivered": "{{count}} orders delivered all-time."
+  },
+  "earnings": {
+    "title": "Earnings",
+    "description": "Delivered orders, commission, and net — in your display currency.",
+    "day": "Day",
+    "orders": "Orders",
+    "gross": "Gross",
+    "commission": "Commission",
+    "net": "Net",
+    "empty": "No delivered orders in this period.",
+    "lastDays": "Last {{count}} days",
+    "totalOrders": "Orders",
+    "totalGross": "Gross",
+    "totalCommission": "Commission",
+    "totalNet": "Net earnings"
+  },
+  "account": {
+    "title": "Account",
+    "description": "Your store and owner details.",
+    "store": "Store",
+    "storeName": "Store name",
+    "status": "Status",
+    "owner": "Owner",
+    "name": "Name",
+    "phone": "Phone",
+    "language": "Language",
+    "languageHint": "Switch the dashboard language. Arabic flips the layout to right-to-left."
+  },
+  "coupons": {
+    "title": "Coupons",
+    "description": "Discount codes for your store. Customers apply them at checkout.",
+    "code": "Code",
+    "type": "Type",
+    "value": "Value",
+    "redemptions": "Redemptions",
+    "expires": "Expires",
+    "never": "Never",
+    "empty": "No coupons yet. Create one below.",
+    "createTitle": "Create coupon",
+    "maxRedemptions": "Max redemptions",
+    "types": {
+      "percent": "Percent",
+      "fixed": "Fixed amount"
+    }
+  }
+}
