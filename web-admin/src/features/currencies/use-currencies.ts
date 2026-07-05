@@ -38,3 +38,15 @@ export function useSetExchangeRate() {
     },
   })
 }
+
+export function useSetCurrencyActive() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ code, active }: { code: string; active: boolean }) => {
+      await apiClient.put(`/admin/currencies/${code}/active`, { active })
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CURRENCIES_KEY })
+    },
+  })
+}

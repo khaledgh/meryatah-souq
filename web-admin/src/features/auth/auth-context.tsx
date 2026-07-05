@@ -30,12 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const refreshToken = getRefreshToken()
       if (!refreshToken) {
-        if (!cancelled) setIsRestoring(false)
+        // No await has happened yet, so the effect can't have been cancelled.
+        setIsRestoring(false)
         return
       }
       try {
         const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
         const parsed = authResponseSchema.parse(response.data)
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is set by the cleanup fn after this await; not statically visible.
         if (cancelled) return
         if (parsed.user.role !== 'super_admin') {
           clearSession()
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         clearSession()
       } finally {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- same async-cancellation flag as above.
         if (!cancelled) setIsRestoring(false)
       }
     })()

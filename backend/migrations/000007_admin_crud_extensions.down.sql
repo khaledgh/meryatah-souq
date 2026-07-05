@@ -1,0 +1,2 @@
+ALTER TABLE coupons DROP COLUMN IF EXISTS starts_at;
+ALTER TABLE banner_ads DROP COLUMN IF EXISTS price_usd;

@@ -26,22 +26,53 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Normalizes any Axios error into the backend's standardized shape so
-// every caller (TanStack Query's onError, form submit handlers) can rely
-// on the same fields regardless of what actually failed (network error,
-// malformed response, or a real API error).
+// Normalizes any error into the backend's standardized shape so every
+// caller (TanStack Query's onError, form submit handlers) can rely on the
+// same fields regardless of what actually failed. Distinguishes the failure
+// classes so the UI shows an accurate, actionable message instead of always
+// blaming the network — a 401 (session expired) and a client-side Zod parse
+// failure both surfaced as "check your connection" before, which was
+// misleading and un-diagnosable.
 export function toApiError(error: unknown): ApiError['error'] {
   if (axios.isAxiosError(error)) {
+    // The backend's standardized error body — the happy path.
     const parsed = apiErrorSchema.safeParse(error.response?.data)
     if (parsed.success) {
       return parsed.data.error
     }
+    // An HTTP response came back but didn't match the error contract.
+    const status = error.response?.status
+    if (status === 401 || status === 403) {
+      return {
+        code: 'UNAUTHORIZED',
+        status,
+        developer_message: `Auth failed (${status.toString()}) on ${error.config?.url ?? 'request'}`,
+        user_message: 'Your session has expired. Please sign in again.',
+      }
+    }
+    if (status != null) {
+      return {
+        code: 'HTTP_ERROR',
+        status,
+        developer_message: `Unexpected ${status.toString()} response on ${error.config?.url ?? 'request'}`,
+        user_message: 'The server returned an unexpected response. Please try again.',
+      }
+    }
+    // No response at all → a genuine network/CORS/timeout failure.
+    return {
+      code: 'NETWORK_ERROR',
+      status: 0,
+      developer_message: error.message,
+      user_message: 'Something went wrong. Please check your connection and try again.',
+    }
   }
+  // Non-Axios throw (most commonly a Zod parse failure in a queryFn) — this
+  // is a client/contract bug, not a connectivity problem.
   return {
-    code: 'NETWORK_ERROR',
+    code: 'CLIENT_ERROR',
     status: 0,
     developer_message: error instanceof Error ? error.message : 'Unknown error',
-    user_message: 'Something went wrong. Please check your connection and try again.',
+    user_message: 'Something went wrong while loading this page. Please try again.',
   }
 }
 

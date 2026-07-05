@@ -8,6 +8,7 @@ export const couponSchema = z.object({
   discount_val: z.number(),
   max_redemptions: z.number().nullable().optional(),
   redeemed_count: z.number(),
+  starts_at: z.string().nullable().optional(),
   expires_at: z.string().nullable().optional(),
   is_active: z.boolean(),
 })

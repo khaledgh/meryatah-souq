@@ -18,7 +18,7 @@ export function SearchBar({
 }: SearchBarProps) {
   return (
     <View className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-900">
-      <Feather name="search" size={20} color="#9ca3af" className="mr-2" />
+      <Feather name="search" size={20} color="#9ca3af" style={{ marginRight: 8 }} />
       <TextInput
         value={value}
         onChangeText={onChangeText}

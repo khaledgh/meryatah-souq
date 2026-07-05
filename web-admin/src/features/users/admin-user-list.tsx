@@ -11,7 +11,7 @@ import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { userDisplayName, type AdminUser } from '../../schemas/user'
-import { useAdminUsers, useCreateUser, useResetLockout, useSetUserActive, type CreateUserInput } from './use-admin-users'
+import { useAdminUsers, useCreateDriver, useCreateUser, useResetLockout, useSetUserActive, type CreateUserInput } from './use-admin-users'
 
 // Shared list view for A6 (Drivers) and A7 (Users) — both blueprint
 // sections use the same shape (list + activate/deactivate + reset
@@ -22,6 +22,7 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
   const setActive = useSetUserActive(role)
   const resetLockout = useResetLockout(role)
   const createUser = useCreateUser()
+  const createDriver = useCreateDriver()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const {
@@ -35,7 +36,18 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
 
   const onSubmit = async (data: CreateUserInput) => {
     try {
-      await createUser.mutateAsync(data)
+      // Drivers go through the dedicated endpoint (passwordless, phone-
+      // verified, active — the correct driver setup per §11.A6); everyone
+      // else through the generic create-user endpoint with a chosen role.
+      if (role === 'driver') {
+        await createDriver.mutateAsync({
+          phone: data.phone,
+          first_name: data.first_name,
+          last_name: data.last_name,
+        })
+      } else {
+        await createUser.mutateAsync(data)
+      }
       setIsModalOpen(false)
       reset()
     } catch {
@@ -93,8 +105,8 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
       <PageHeader
         title={title}
         actions={
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 size-4" />
+          <Button onClick={() => { setIsModalOpen(true) }}>
+            <Plus className="me-2 size-4" />
             {role === 'driver' ? t('drivers.create') : t('users.create')}
           </Button>
         }
@@ -103,10 +115,10 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
 
       <Modal
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false) }}
         title={role === 'driver' ? t('drivers.create') : t('users.create')}
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4">
           <Input
             label={t('auth.firstNameLabel')}
             {...register('first_name', { required: true })}
@@ -120,30 +132,34 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
           <Input
             label={t('auth.phoneLabel')}
             type="tel"
-            placeholder="+961..."
+            placeholder={t('users.phonePlaceholder')}
             {...register('phone', { required: true })}
             required
           />
-          
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('users.role')}
-            </label>
-            <select
-              {...register('role')}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-brand-400 dark:focus:ring-brand-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-            >
-              <option value="user">{t('users.roleUser')}</option>
-              <option value="vendor">{t('users.roleVendor')}</option>
-              <option value="driver">{t('users.roleDriver')}</option>
-            </select>
-          </div>
+
+          {/* Role is only selectable on the Users page; drivers always get
+              role=driver via the dedicated create-driver endpoint. */}
+          {role !== 'driver' ? (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('users.role')}
+              </label>
+              <select
+                {...register('role')}
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-brand-400 dark:focus:ring-brand-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
+              >
+                <option value="user">{t('users.roleUser')}</option>
+                <option value="vendor">{t('users.roleVendor')}</option>
+                <option value="driver">{t('users.roleDriver')}</option>
+              </select>
+            </div>
+          ) : null}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => { setIsModalOpen(false) }}
               disabled={isSubmitting}
             >
               {t('common.cancel')}

@@ -5,7 +5,7 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "scheme": "meryatasouq",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "extra": {
       "apiBaseUrl": "http://localhost:8080/api/v1"
@@ -22,7 +22,16 @@
       "expo-localization",
       "expo-secure-store",
       "expo-asset",
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf",
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
+          ]
+        }
+      ],
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true

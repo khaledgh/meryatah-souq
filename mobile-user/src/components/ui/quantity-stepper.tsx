@@ -35,7 +35,7 @@ export function QuantityStepper({
           isSm ? 'size-6' : 'size-8'
         } ${value <= min ? 'opacity-40' : ''}`}
       >
-        <Feather name="minus" size={isSm ? 14 : 18} color="#4b5563" className="dark:text-gray-200" />
+        <Feather name="minus" size={isSm ? 14 : 18} color="#4b5563" />
       </Pressable>
 
       <Text
@@ -53,7 +53,7 @@ export function QuantityStepper({
           isSm ? 'size-6' : 'size-8'
         } ${value >= max ? 'opacity-40' : ''}`}
       >
-        <Feather name="plus" size={isSm ? 14 : 18} color="#4b5563" className="dark:text-gray-200" />
+        <Feather name="plus" size={isSm ? 14 : 18} color="#4b5563" />
       </Pressable>
     </View>
   )

@@ -29,21 +29,38 @@ type CreateCouponInput struct {
 	DiscountType   string
 	DiscountVal    float64
 	MaxRedemptions *int
+	StartsAt       *time.Time
 	ExpiresAt      *time.Time
 }
 
+// validateCouponFields enforces the shared rules for create and update.
+// forCreate=true additionally rejects a past expiry (editing an already-
+// expired coupon to keep the same expiry should not be blocked).
+func validateCouponFields(code, discountType string, discountVal float64, startsAt, expiresAt *time.Time, forCreate bool) *apperror.AppError {
+	if code == "" {
+		return apperror.Validation("code is required")
+	}
+	if discountType != "percent" && discountType != "fixed" {
+		return apperror.Validation("discount_type must be \"percent\" or \"fixed\"")
+	}
+	if discountType == "percent" && discountVal > 100 {
+		return apperror.Validation("percent discount_val must not exceed 100")
+	}
+	if discountVal <= 0 {
+		return apperror.Validation("discount_val must be positive")
+	}
+	if startsAt != nil && expiresAt != nil && expiresAt.Before(*startsAt) {
+		return apperror.Validation("expires_at must not be before starts_at")
+	}
+	if forCreate && expiresAt != nil && expiresAt.Before(time.Now()) {
+		return apperror.Validation("expires_at must be in the future")
+	}
+	return nil
+}
+
 func (s *CouponService) Create(ctx context.Context, in CreateCouponInput) (*models.Coupon, *apperror.AppError) {
-	if in.Code == "" {
-		return nil, apperror.Validation("code is required")
-	}
-	if in.DiscountType != "percent" && in.DiscountType != "fixed" {
-		return nil, apperror.Validation("discount_type must be \"percent\" or \"fixed\"")
-	}
-	if in.DiscountVal <= 0 {
-		return nil, apperror.Validation("discount_val must be positive")
-	}
-	if in.ExpiresAt != nil && in.ExpiresAt.Before(time.Now()) {
-		return nil, apperror.Validation("expires_at must be in the future")
+	if appErr := validateCouponFields(in.Code, in.DiscountType, in.DiscountVal, in.StartsAt, in.ExpiresAt, true); appErr != nil {
+		return nil, appErr
 	}
 
 	coupon := models.Coupon{
@@ -53,6 +70,7 @@ func (s *CouponService) Create(ctx context.Context, in CreateCouponInput) (*mode
 		DiscountType:   in.DiscountType,
 		DiscountVal:    in.DiscountVal,
 		MaxRedemptions: in.MaxRedemptions,
+		StartsAt:       in.StartsAt,
 		ExpiresAt:      in.ExpiresAt,
 		IsActive:       true,
 	}
@@ -64,6 +82,70 @@ func (s *CouponService) Create(ctx context.Context, in CreateCouponInput) (*mode
 		return nil, apperror.Internal(fmt.Errorf("coupon: create: %w", err))
 	}
 	return &coupon, nil
+}
+
+type UpdateCouponInput struct {
+	Code           string
+	DiscountType   string
+	DiscountVal    float64
+	MaxRedemptions *int
+	StartsAt       *time.Time
+	ExpiresAt      *time.Time
+}
+
+// Update edits a coupon's fields, scoped to vendorID if non-empty (a vendor
+// may only edit its own coupons; empty vendorID = super_admin editing any
+// coupon, blueprint §11.A9). redeemed_count and is_active are not editable
+// here (is_active is managed via SetActive).
+func (s *CouponService) Update(ctx context.Context, vendorID, couponID string, in UpdateCouponInput) (*models.Coupon, *apperror.AppError) {
+	if appErr := validateCouponFields(in.Code, in.DiscountType, in.DiscountVal, in.StartsAt, in.ExpiresAt, false); appErr != nil {
+		return nil, appErr
+	}
+
+	query := s.db.WithContext(ctx).Model(&models.Coupon{}).Where("id = ?", couponID)
+	if vendorID != "" {
+		query = query.Where("vendor_id = ?", vendorID)
+	}
+	result := query.Updates(map[string]any{
+		"code":            in.Code,
+		"discount_type":   in.DiscountType,
+		"discount_val":    in.DiscountVal,
+		"max_redemptions": in.MaxRedemptions,
+		"starts_at":       in.StartsAt,
+		"expires_at":      in.ExpiresAt,
+	})
+	if result.Error != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) && pgErr.Code == postgresUniqueViolation {
+			return nil, apperror.Validation(fmt.Sprintf("coupon code %q already exists", in.Code))
+		}
+		return nil, apperror.Internal(fmt.Errorf("coupon: update: %w", result.Error))
+	}
+	if result.RowsAffected == 0 {
+		return nil, apperror.NotFound("coupon")
+	}
+
+	var coupon models.Coupon
+	if err := s.db.WithContext(ctx).Where("id = ?", couponID).First(&coupon).Error; err != nil {
+		return nil, apperror.Internal(fmt.Errorf("coupon: reload after update: %w", err))
+	}
+	return &coupon, nil
+}
+
+// Delete removes a coupon, scoped to vendorID if non-empty.
+func (s *CouponService) Delete(ctx context.Context, vendorID, couponID string) *apperror.AppError {
+	query := s.db.WithContext(ctx).Where("id = ?", couponID)
+	if vendorID != "" {
+		query = query.Where("vendor_id = ?", vendorID)
+	}
+	result := query.Delete(&models.Coupon{})
+	if result.Error != nil {
+		return apperror.Internal(fmt.Errorf("coupon: delete: %w", result.Error))
+	}
+	if result.RowsAffected == 0 {
+		return apperror.NotFound("coupon")
+	}
+	return nil
 }
 
 // SetActive toggles a coupon on/off, scoped to vendorID if non-empty (a

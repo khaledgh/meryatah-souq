@@ -24,6 +24,7 @@ type createCouponRequest struct {
 	DiscountType   string     `json:"discount_type"`
 	DiscountVal    float64    `json:"discount_val"`
 	MaxRedemptions *int       `json:"max_redemptions,omitempty"`
+	StartsAt       *time.Time `json:"starts_at,omitempty"`
 	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
 }
 
@@ -46,12 +47,51 @@ func (h *CouponHandler) Create(c echo.Context) error {
 		DiscountType:   req.DiscountType,
 		DiscountVal:    req.DiscountVal,
 		MaxRedemptions: req.MaxRedemptions,
+		StartsAt:       req.StartsAt,
 		ExpiresAt:      req.ExpiresAt,
 	})
 	if appErr != nil {
 		return appErr
 	}
 	return c.JSON(http.StatusCreated, echo.Map{"data": coupon})
+}
+
+type updateCouponRequest struct {
+	Code           string     `json:"code"`
+	DiscountType   string     `json:"discount_type"`
+	DiscountVal    float64    `json:"discount_val"`
+	MaxRedemptions *int       `json:"max_redemptions,omitempty"`
+	StartsAt       *time.Time `json:"starts_at,omitempty"`
+	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
+}
+
+// UpdateGlobal handles PUT /api/v1/admin/coupons/:couponId (super_admin, any
+// coupon, blueprint §11.A9 editor).
+func (h *CouponHandler) UpdateGlobal(c echo.Context) error {
+	var req updateCouponRequest
+	if err := c.Bind(&req); err != nil {
+		return apperror.BadRequest("invalid request body")
+	}
+	coupon, appErr := h.coupons.Update(c.Request().Context(), "", c.Param("couponId"), services.UpdateCouponInput{
+		Code:           req.Code,
+		DiscountType:   req.DiscountType,
+		DiscountVal:    req.DiscountVal,
+		MaxRedemptions: req.MaxRedemptions,
+		StartsAt:       req.StartsAt,
+		ExpiresAt:      req.ExpiresAt,
+	})
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": coupon})
+}
+
+// DeleteGlobal handles DELETE /api/v1/admin/coupons/:couponId (super_admin).
+func (h *CouponHandler) DeleteGlobal(c echo.Context) error {
+	if appErr := h.coupons.Delete(c.Request().Context(), "", c.Param("couponId")); appErr != nil {
+		return appErr
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 // ListGlobal handles GET /api/v1/admin/coupons (super_admin, all coupons).

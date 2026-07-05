@@ -1,29 +1,32 @@
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { TextInput } from '../../components/ui/input'
+import { Modal } from '../../components/ui/modal'
 import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
 import type { CurrencyWithRate } from '../../schemas/currency'
-import { useCreateCurrency, useCurrencies, useSetExchangeRate } from './use-currencies'
+import { useCreateCurrency, useCurrencies, useSetCurrencyActive, useSetExchangeRate } from './use-currencies'
 
 // Blueprint §11.A11: Currencies & Rates — currencies table, exchange_rates
-// editor, add/activate currency, update rate. Base currency's rate is
-// fixed at 1 server-side (SettingsService.SetExchangeRate rejects any
-// other value for it).
+// editor, add currency (modal), activate/deactivate, update rate. Base
+// currency's rate is fixed at 1 and it cannot be deactivated (both enforced
+// server-side).
 export function CurrenciesPage() {
   const { t } = useTranslation()
   const { data: currencies, isLoading, isError, error, refetch } = useCurrencies()
   const setRate = useSetExchangeRate()
+  const setActive = useSetCurrencyActive()
   const createCurrency = useCreateCurrency()
 
   const [rateDrafts, setRateDrafts] = useState<Record<string, string>>({})
-  const [newCurrency, setNewCurrency] = useState({ code: '', symbol: '', name: '', decimals: 2 })
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [newCurrency, setNewCurrency] = useState({ code: '', symbol: '', name: '', decimals: '2' })
 
   const columns: Column<CurrencyWithRate>[] = [
     { key: 'code', header: t('common.code'), render: (c) => <span className="font-mono text-xs font-semibold">{c.code}</span> },
@@ -32,7 +35,17 @@ export function CurrenciesPage() {
     {
       key: 'status',
       header: t('common.active'),
-      render: (c) => <Badge variant={c.is_active ? 'success' : 'neutral'}>{c.is_active ? t('common.active') : t('common.inactive')}</Badge>,
+      render: (c) => (
+        <button
+          type="button"
+          onClick={() => {
+            setActive.mutate({ code: c.code, active: !c.is_active })
+          }}
+          title={c.is_active ? t('common.suspend') : t('common.activate')}
+        >
+          <Badge variant={c.is_active ? 'success' : 'neutral'}>{c.is_active ? t('common.active') : t('common.inactive')}</Badge>
+        </button>
+      ),
     },
     {
       key: 'rate',
@@ -67,57 +80,67 @@ export function CurrenciesPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.currencies')} />
+      <PageHeader
+        title={t('nav.currencies')}
+        actions={
+          <Button onClick={() => { setIsModalOpen(true) }}>
+            <Plus className="me-2 size-4" aria-hidden="true" />
+            {t('currencies.create')}
+          </Button>
+        }
+      />
 
       {isLoading ? <LoadingState /> : isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : (
         <DataTable columns={columns} rows={currencies ?? []} rowKey={(c) => c.code} />
       )}
 
-      <Card className="mt-6">
-        <CardHeader title={t('currencies.createTitle')} />
-        <CardBody>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              createCurrency.mutate(newCurrency, {
+      {setActive.isError ? (
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{toApiError(setActive.error).user_message}</p>
+      ) : null}
+
+      <Modal
+        open={isModalOpen}
+        onClose={() => { setIsModalOpen(false) }}
+        title={t('currencies.createTitle')}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            createCurrency.mutate(
+              {
+                code: newCurrency.code,
+                symbol: newCurrency.symbol,
+                name: newCurrency.name,
+                decimals: Number(newCurrency.decimals) || 0,
+              },
+              {
                 onSuccess: () => {
-                  setNewCurrency({ code: '', symbol: '', name: '', decimals: 2 })
+                  setNewCurrency({ code: '', symbol: '', name: '', decimals: '2' })
+                  setIsModalOpen(false)
                 },
-              })
-            }}
-            className="flex flex-wrap items-end gap-4"
-          >
-            <div className="w-24">
+              },
+            )
+          }}
+          className="flex flex-col gap-4"
+        >
+          <div className="flex gap-4">
+            <div className="w-28">
               <TextInput
                 label={t('common.code')}
                 required
                 value={newCurrency.code}
-                onChange={(e) => {
-                  setNewCurrency((c) => ({ ...c, code: e.target.value.toUpperCase() }))
-                }}
+                onChange={(e) => { setNewCurrency((c) => ({ ...c, code: e.target.value.toUpperCase() })) }}
               />
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <TextInput
                 label={t('currencies.symbol')}
                 required
                 value={newCurrency.symbol}
-                onChange={(e) => {
-                  setNewCurrency((c) => ({ ...c, symbol: e.target.value }))
-                }}
+                onChange={(e) => { setNewCurrency((c) => ({ ...c, symbol: e.target.value })) }}
               />
             </div>
-            <div className="flex-1 min-w-[10rem]">
-              <TextInput
-                label={t('common.name')}
-                required
-                value={newCurrency.name}
-                onChange={(e) => {
-                  setNewCurrency((c) => ({ ...c, name: e.target.value }))
-                }}
-              />
-            </div>
-            <div className="w-20">
+            <div className="w-24">
               <TextInput
                 type="number"
                 min={0}
@@ -125,20 +148,27 @@ export function CurrenciesPage() {
                 label={t('currencies.decimals')}
                 required
                 value={newCurrency.decimals}
-                onChange={(e) => {
-                  setNewCurrency((c) => ({ ...c, decimals: Number(e.target.value) }))
-                }}
+                onChange={(e) => { setNewCurrency((c) => ({ ...c, decimals: e.target.value })) }}
               />
             </div>
-            <Button type="submit" isLoading={createCurrency.isPending}>
-              {t('common.create')}
-            </Button>
-          </form>
+          </div>
+          <TextInput
+            label={t('common.name')}
+            required
+            value={newCurrency.name}
+            onChange={(e) => { setNewCurrency((c) => ({ ...c, name: e.target.value })) }}
+          />
+
           {createCurrency.isError ? (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{toApiError(createCurrency.error).user_message}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{toApiError(createCurrency.error).user_message}</p>
           ) : null}
-        </CardBody>
-      </Card>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => { setIsModalOpen(false) }}>{t('common.cancel')}</Button>
+            <Button type="submit" isLoading={createCurrency.isPending}>{t('common.create')}</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -97,7 +97,7 @@ export default function OrderTrackingScreen() {
         socket.onerror = () => {
           if (active) setWsStatus('disconnected')
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setWsStatus('disconnected')
           // Retry connection after 5 seconds
@@ -150,7 +150,7 @@ export default function OrderTrackingScreen() {
       {/* Header */}
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">
-          <Feather name="arrow-left" size={24} color="#374151" className="dark:text-gray-200" />
+          <Feather name="arrow-left" size={24} color="#374151" />
         </Pressable>
         <View className="items-center">
           <Text className="text-base font-bold text-gray-900 dark:text-gray-100">
@@ -159,7 +159,7 @@ export default function OrderTrackingScreen() {
           <Text className="text-xs text-gray-400">#{order.id.substring(0, 8)}</Text>
         </View>
         <Pressable onPress={() => void refetch()} className="p-1">
-          <Feather name="refresh-cw" size={20} color="#374151" className="dark:text-gray-200" />
+          <Feather name="refresh-cw" size={20} color="#374151" />
         </Pressable>
       </View>
 
@@ -338,6 +338,3 @@ export default function OrderTrackingScreen() {
     </SafeAreaView>
   )
 }
-
-// Simple fallback ScrollView because flat list numColumns is not used here.
-import { ScrollView } from 'react-native'

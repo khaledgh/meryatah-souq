@@ -27,6 +27,7 @@ export function useLocaleBootstrap() {
       try {
         const response = await apiClient.get('/locales')
         const parsed = localeListSchema.parse(response.data).data
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is mutated by the cleanup fn after the await; the linter can't see that across the async boundary.
         if (!cancelled) setLocales(parsed)
       } catch {
         // Non-fatal: the switcher falls back to its static list and
@@ -48,6 +49,7 @@ export function useLocaleBootstrap() {
       try {
         const response = await apiClient.get(`/i18n/${locale}`)
         const byNamespace = translationsResponseSchema.parse(response.data).data
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is mutated by the cleanup fn after the await; the linter can't see that across the async boundary.
         if (cancelled) return
         for (const [namespace, entries] of Object.entries(byNamespace)) {
           // deep + overwrite: backend values win over the static fallback,

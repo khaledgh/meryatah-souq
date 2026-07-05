@@ -60,6 +60,7 @@ type CreateBannerAdInput struct {
 	ImageData []byte
 	TargetURL *string
 	IsPaid    bool
+	PriceUSD  *float64
 	Priority  int
 	StartsAt  *time.Time
 	EndsAt    *time.Time
@@ -95,6 +96,7 @@ func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*
 		StorageDriver: driverName,
 		TargetURL:     in.TargetURL,
 		IsPaid:        in.IsPaid,
+		PriceUSD:      in.PriceUSD,
 		Priority:      in.Priority,
 		StartsAt:      in.StartsAt,
 		EndsAt:        in.EndsAt,
@@ -109,6 +111,90 @@ func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*
 			log.Printf("banner_ad: cleanup after failed DB write also failed, object %q on driver %q may be orphaned: %v", objectKey, driverName, delErr)
 		}
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: create: %w", err))
+	}
+	return &ad, nil
+}
+
+type UpdateBannerAdInput struct {
+	VendorID  *string
+	ImageData []byte // optional — when non-empty, replaces the stored image
+	TargetURL *string
+	IsPaid    bool
+	PriceUSD  *float64
+	Priority  int
+	StartsAt  *time.Time
+	EndsAt    *time.Time
+}
+
+// Update edits an existing ad's metadata (blueprint §11.A8 editor). The
+// image is only re-uploaded when new ImageData is provided; otherwise the
+// existing stored object is kept. is_active is managed separately via
+// SetActive so this cannot accidentally re-activate a suspended ad.
+func (s *BannerAdService) Update(ctx context.Context, adID string, in UpdateBannerAdInput) (*models.BannerAd, *apperror.AppError) {
+	var ad models.BannerAd
+	if err := s.db.WithContext(ctx).Where("id = ?", adID).First(&ad).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperror.NotFound("banner ad")
+		}
+		return nil, apperror.Internal(fmt.Errorf("banner_ad: load for update: %w", err))
+	}
+
+	// Optional image replacement — validate + store the new object first, and
+	// only delete the old one after the DB row is successfully updated, so a
+	// failure never leaves the ad pointing at a deleted image.
+	oldKey := ad.ImageKey
+	oldDriver := ad.StorageDriver
+	imageReplaced := false
+	if len(in.ImageData) > 0 {
+		validated, err := storage.ValidateImageUpload(in.ImageData)
+		if err != nil {
+			return nil, apperror.Validation(err.Error())
+		}
+		objectKey, keyErr := storage.RandomObjectKey("banner-ads", validated.Extension)
+		if keyErr != nil {
+			return nil, apperror.Internal(keyErr)
+		}
+		driverName, driver, resolveErr := s.storageRegistry.ResolveActive(ctx, s.cache)
+		if resolveErr != nil {
+			return nil, apperror.Internal(resolveErr)
+		}
+		if putErr := driver.Put(ctx, objectKey, bytes.NewReader(validated.Data), validated.ContentType); putErr != nil {
+			return nil, apperror.Internal(putErr)
+		}
+		ad.ImageKey = objectKey
+		ad.StorageDriver = driverName
+		imageReplaced = true
+	}
+
+	ad.VendorID = in.VendorID
+	ad.TargetURL = in.TargetURL
+	ad.IsPaid = in.IsPaid
+	ad.PriceUSD = in.PriceUSD
+	ad.Priority = in.Priority
+	ad.StartsAt = in.StartsAt
+	ad.EndsAt = in.EndsAt
+
+	if err := s.db.WithContext(ctx).Model(&models.BannerAd{}).Where("id = ?", adID).
+		Updates(map[string]any{
+			"vendor_id":      ad.VendorID,
+			"image_key":      ad.ImageKey,
+			"storage_driver": ad.StorageDriver,
+			"target_url":     ad.TargetURL,
+			"is_paid":        ad.IsPaid,
+			"price_usd":      ad.PriceUSD,
+			"priority":       ad.Priority,
+			"starts_at":      ad.StartsAt,
+			"ends_at":        ad.EndsAt,
+		}).Error; err != nil {
+		return nil, apperror.Internal(fmt.Errorf("banner_ad: update: %w", err))
+	}
+
+	if imageReplaced {
+		if driver, resolveErr := s.storageRegistry.Resolve(oldDriver); resolveErr == nil {
+			if delErr := driver.Delete(ctx, oldKey); delErr != nil {
+				log.Printf("banner_ad: update replaced image but old object %q on driver %q may be orphaned: %v", oldKey, oldDriver, delErr)
+			}
+		}
 	}
 	return &ad, nil
 }

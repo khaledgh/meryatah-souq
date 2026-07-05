@@ -81,6 +81,11 @@ func (h *BannerAdHandler) Create(c echo.Context) error {
 		isPaid = parsed
 	}
 
+	priceUSD, appErr := parseOptionalPriceForm(c.FormValue("price_usd"))
+	if appErr != nil {
+		return appErr
+	}
+
 	priority := 0
 	if v := c.FormValue("priority"); v != "" {
 		parsed, err := strconv.Atoi(v)
@@ -90,20 +95,9 @@ func (h *BannerAdHandler) Create(c echo.Context) error {
 		priority = parsed
 	}
 
-	var startsAt, endsAt *time.Time
-	if v := c.FormValue("starts_at"); v != "" {
-		t, err := time.Parse(time.RFC3339, v)
-		if err != nil {
-			return apperror.Validation("starts_at must be a valid RFC3339 timestamp")
-		}
-		startsAt = &t
-	}
-	if v := c.FormValue("ends_at"); v != "" {
-		t, err := time.Parse(time.RFC3339, v)
-		if err != nil {
-			return apperror.Validation("ends_at must be a valid RFC3339 timestamp")
-		}
-		endsAt = &t
+	startsAt, endsAt, appErr := parseBannerScheduleForm(c)
+	if appErr != nil {
+		return appErr
 	}
 
 	ad, appErr := h.ads.Create(c.Request().Context(), services.CreateBannerAdInput{
@@ -111,6 +105,7 @@ func (h *BannerAdHandler) Create(c echo.Context) error {
 		ImageData: data,
 		TargetURL: targetURL,
 		IsPaid:    isPaid,
+		PriceUSD:  priceUSD,
 		Priority:  priority,
 		StartsAt:  startsAt,
 		EndsAt:    endsAt,
@@ -119,6 +114,121 @@ func (h *BannerAdHandler) Create(c echo.Context) error {
 		return appErr
 	}
 	return c.JSON(http.StatusCreated, echo.Map{"data": ad})
+}
+
+// parseOptionalPriceForm parses an optional non-negative monetary form value.
+func parseOptionalPriceForm(v string) (*float64, *apperror.AppError) {
+	if v == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil, apperror.Validation("price_usd must be a valid number")
+	}
+	if parsed < 0 {
+		return nil, apperror.Validation("price_usd must not be negative")
+	}
+	return &parsed, nil
+}
+
+// parseBannerScheduleForm parses the optional starts_at/ends_at RFC3339
+// window and enforces start <= end when both are present.
+func parseBannerScheduleForm(c echo.Context) (*time.Time, *time.Time, *apperror.AppError) {
+	var startsAt, endsAt *time.Time
+	if v := c.FormValue("starts_at"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return nil, nil, apperror.Validation("starts_at must be a valid RFC3339 timestamp")
+		}
+		startsAt = &t
+	}
+	if v := c.FormValue("ends_at"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return nil, nil, apperror.Validation("ends_at must be a valid RFC3339 timestamp")
+		}
+		endsAt = &t
+	}
+	if startsAt != nil && endsAt != nil && endsAt.Before(*startsAt) {
+		return nil, nil, apperror.Validation("ends_at must not be before starts_at")
+	}
+	return startsAt, endsAt, nil
+}
+
+// Update handles PUT /api/v1/admin/banner-ads/:id (super_admin only,
+// blueprint §11.A8 editor). Accepts multipart form; the image file is
+// optional — when omitted, the stored image is kept.
+func (h *BannerAdHandler) Update(c echo.Context) error {
+	var imageData []byte
+	if fileHeader, err := c.FormFile("file"); err == nil {
+		if storage.IsObviouslyDangerousFilename(fileHeader.Filename) {
+			return apperror.Validation("file type not allowed")
+		}
+		if fileHeader.Size > storage.MaxUploadSizeBytes {
+			return apperror.Validation("file exceeds maximum upload size")
+		}
+		src, openErr := fileHeader.Open()
+		if openErr != nil {
+			return apperror.Internal(openErr)
+		}
+		defer src.Close()
+		data, readErr := io.ReadAll(io.LimitReader(src, storage.MaxUploadSizeBytes+1))
+		if readErr != nil {
+			return apperror.Internal(readErr)
+		}
+		imageData = data
+	}
+
+	var vendorID *string
+	if v := c.FormValue("vendor_id"); v != "" {
+		vendorID = &v
+	}
+	var targetURL *string
+	if v := c.FormValue("target_url"); v != "" {
+		targetURL = &v
+	}
+	isPaid := false
+	if v := c.FormValue("is_paid"); v != "" {
+		parsed, err := strconv.ParseBool(v)
+		if err != nil {
+			return apperror.Validation("is_paid must be a valid boolean")
+		}
+		isPaid = parsed
+	}
+
+	priceUSD, appErr := parseOptionalPriceForm(c.FormValue("price_usd"))
+	if appErr != nil {
+		return appErr
+	}
+
+	priority := 0
+	if v := c.FormValue("priority"); v != "" {
+		parsed, err := strconv.Atoi(v)
+		if err != nil {
+			return apperror.Validation("priority must be a valid integer")
+		}
+		priority = parsed
+	}
+
+	startsAt, endsAt, appErr := parseBannerScheduleForm(c)
+	if appErr != nil {
+		return appErr
+	}
+
+	ad, appErr := h.ads.Update(c.Request().Context(), c.Param("id"), services.UpdateBannerAdInput{
+		VendorID:  vendorID,
+		ImageData: imageData,
+		TargetURL: targetURL,
+		IsPaid:    isPaid,
+		PriceUSD:  priceUSD,
+		Priority:  priority,
+		StartsAt:  startsAt,
+		EndsAt:    endsAt,
+	})
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": ad})
 }
 
 type setBannerAdActiveRequest struct {

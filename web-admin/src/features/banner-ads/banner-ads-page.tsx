@@ -1,35 +1,132 @@
-import { ImageIcon, Trash2 } from 'lucide-react'
+import { ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { Checkbox, TextInput } from '../../components/ui/input'
+import { Modal } from '../../components/ui/modal'
 import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
 import type { BannerAd } from '../../schemas/banner-ad'
-import { useBannerAds, useCreateBannerAd, useDeleteBannerAd, useSetBannerAdActive } from './use-banner-ads'
+import {
+  useBannerAds,
+  useCreateBannerAd,
+  useDeleteBannerAd,
+  useSetBannerAdActive,
+  useUpdateBannerAd,
+} from './use-banner-ads'
 
-// Blueprint §11.A8: Banner Ads — list (image, vendor/platform, paid/free,
+// An RFC3339/ISO instant → the value a <input type="datetime-local"> expects
+// (local wall-clock "YYYY-MM-DDTHH:mm", no zone). Returns '' for null/invalid.
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear().toString()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// A datetime-local value → RFC3339 UTC, or undefined when empty.
+function localInputToIso(local: string): string | undefined {
+  if (!local) return undefined
+  const d = new Date(local)
+  if (Number.isNaN(d.getTime())) return undefined
+  return d.toISOString()
+}
+
+interface AdFormState {
+  file: File | null
+  vendorId: string
+  targetUrl: string
+  isPaid: boolean
+  priceUsd: string
+  priority: string
+  startsAt: string
+  endsAt: string
+}
+
+const emptyForm: AdFormState = {
+  file: null,
+  vendorId: '',
+  targetUrl: '',
+  isPaid: false,
+  priceUsd: '',
+  priority: '0',
+  startsAt: '',
+  endsAt: '',
+}
+
+function adToForm(ad: BannerAd): AdFormState {
+  return {
+    file: null,
+    vendorId: ad.vendor_id ?? '',
+    targetUrl: ad.target_url ?? '',
+    isPaid: ad.is_paid,
+    priceUsd: ad.price_usd != null ? ad.price_usd.toString() : '',
+    priority: ad.priority.toString(),
+    startsAt: isoToLocalInput(ad.starts_at),
+    endsAt: isoToLocalInput(ad.ends_at),
+  }
+}
+
+// Blueprint §11.A8: Banner Ads — list (image, vendor/platform, paid/price,
 // priority, schedule, active); editor (upload image, target URL, is_paid,
-// priority, start/end); create/edit/delete/toggle. Editing an existing
-// ad's fields (other than active) is deferred: the backend only exposes
-// create/toggle-active/delete, no PATCH for target_url/priority/schedule.
+// price, priority, start/end) in a modal opened from the header; create,
+// edit, suspend/activate, delete.
 export function BannerAdsPage() {
   const { t } = useTranslation()
   const { data: ads, isLoading, isError, error, refetch } = useBannerAds()
   const setActive = useSetBannerAdActive()
   const deleteAd = useDeleteBannerAd()
   const createAd = useCreateBannerAd()
+  const updateAd = useUpdateBannerAd()
 
-  const [file, setFile] = useState<File | null>(null)
-  const [vendorId, setVendorId] = useState('')
-  const [targetUrl, setTargetUrl] = useState('')
-  const [isPaid, setIsPaid] = useState(false)
-  const [priority, setPriority] = useState(0)
+  // null = closed; { id: null } = create; { id } = edit that ad.
+  const [editing, setEditing] = useState<{ id: string | null } | null>(null)
+  const [form, setForm] = useState<AdFormState>(emptyForm)
+
+  const isEdit = editing?.id != null
+  const mutation = isEdit ? updateAd : createAd
+
+  const openCreate = () => {
+    setForm(emptyForm)
+    setEditing({ id: null })
+  }
+  const openEdit = (ad: BannerAd) => {
+    setForm(adToForm(ad))
+    setEditing({ id: ad.id })
+  }
+  const close = () => {
+    setEditing(null)
+  }
+
+  const submit = (e: React.SyntheticEvent) => {
+    e.preventDefault()
+
+    const shared = {
+      vendorId: form.vendorId || undefined,
+      targetUrl: form.targetUrl || undefined,
+      isPaid: form.isPaid,
+      priceUsd: form.isPaid && form.priceUsd ? Number(form.priceUsd) : undefined,
+      priority: Number(form.priority) || 0,
+      startsAt: localInputToIso(form.startsAt),
+      endsAt: localInputToIso(form.endsAt),
+    }
+
+    const editId = editing?.id ?? null
+    if (editId != null) {
+      updateAd.mutate(
+        { id: editId, file: form.file ?? undefined, ...shared },
+        { onSuccess: close },
+      )
+    } else if (form.file) {
+      // A new ad requires an image; an edit keeps the existing one if none picked.
+      createAd.mutate({ file: form.file, ...shared }, { onSuccess: close })
+    }
+  }
 
   const columns: Column<BannerAd>[] = [
     {
@@ -50,7 +147,26 @@ export function BannerAdsPage() {
       header: t('bannerAds.paid'),
       render: (a) => (a.is_paid ? <Badge variant="brand">{t('common.yes')}</Badge> : <span className="text-gray-400 dark:text-gray-600">{t('common.no')}</span>),
     },
+    {
+      key: 'price',
+      header: t('bannerAds.price'),
+      render: (a) => (a.price_usd != null ? `$${a.price_usd.toFixed(2)}` : <span className="text-gray-400 dark:text-gray-600">—</span>),
+    },
     { key: 'priority', header: t('bannerAds.priority'), render: (a) => a.priority },
+    {
+      key: 'schedule',
+      header: t('bannerAds.schedule'),
+      render: (a) =>
+        a.starts_at || a.ends_at ? (
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {a.starts_at ? new Date(a.starts_at).toLocaleString() : '—'}
+            {' → '}
+            {a.ends_at ? new Date(a.ends_at).toLocaleString() : '—'}
+          </span>
+        ) : (
+          <span className="text-gray-400 dark:text-gray-600">{t('bannerAds.always')}</span>
+        ),
+    },
     {
       key: 'status',
       header: t('common.active'),
@@ -60,6 +176,7 @@ export function BannerAdsPage() {
           onClick={() => {
             setActive.mutate({ id: a.id, active: !a.is_active })
           }}
+          title={a.is_active ? t('common.suspend') : t('common.activate')}
         >
           <Badge variant={a.is_active ? 'success' : 'neutral'}>{a.is_active ? t('common.active') : t('common.inactive')}</Badge>
         </button>
@@ -69,108 +186,138 @@ export function BannerAdsPage() {
       key: 'actions',
       header: t('common.actions'),
       render: (a) => (
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm(t('common.confirmDelete'))) {
-              deleteAd.mutate(a.id)
-            }
-          }}
-          className="inline-flex items-center gap-1 text-red-600 hover:underline dark:text-red-400"
-        >
-          <Trash2 className="size-3.5" aria-hidden="true" /> {t('common.delete')}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => { openEdit(a) }}
+            className="inline-flex items-center gap-1 text-brand-600 hover:underline dark:text-brand-400"
+          >
+            <Pencil className="size-3.5" aria-hidden="true" /> {t('common.edit')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(t('common.confirmDelete'))) {
+                deleteAd.mutate(a.id)
+              }
+            }}
+            className="inline-flex items-center gap-1 text-red-600 hover:underline dark:text-red-400"
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" /> {t('common.delete')}
+          </button>
+        </div>
       ),
     },
   ]
 
   return (
     <div>
-      <PageHeader title={t('nav.bannerAds')} />
+      <PageHeader
+        title={t('nav.bannerAds')}
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="me-2 size-4" aria-hidden="true" />
+            {t('bannerAds.create')}
+          </Button>
+        }
+      />
 
       {isLoading ? <LoadingState /> : isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : (
         <DataTable columns={columns} rows={ads ?? []} rowKey={(a) => a.id} />
       )}
 
-      <Card className="mt-6">
-        <CardHeader title={t('bannerAds.createTitle')} />
-        <CardBody>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!file) return
-              createAd.mutate(
-                { file, vendorId: vendorId || undefined, targetUrl: targetUrl || undefined, isPaid, priority },
-                {
-                  onSuccess: () => {
-                    setFile(null)
-                    setVendorId('')
-                    setTargetUrl('')
-                    setIsPaid(false)
-                    setPriority(0)
-                  },
-                },
-              )
-            }}
-            className="flex flex-wrap items-end gap-4"
-          >
-            <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
-              {t('bannerAds.image')}
-              <input
-                type="file"
-                accept="image/*"
-                required
-                onChange={(e) => {
-                  setFile(e.target.files?.[0] ?? null)
-                }}
-                className="text-xs text-gray-500 file:me-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-950 dark:file:text-brand-300"
-              />
-            </label>
-            <div className="w-40">
-              <TextInput
-                label={t('common.vendorIdOptional')}
-                value={vendorId}
-                onChange={(e) => {
-                  setVendorId(e.target.value)
-                }}
+      <Modal
+        open={editing !== null}
+        onClose={close}
+        title={isEdit ? t('bannerAds.editTitle') : t('bannerAds.createTitle')}
+      >
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+            {t('bannerAds.image')}
+            {isEdit ? <span className="text-xs text-gray-400 dark:text-gray-500">{t('bannerAds.imageKeepHint')}</span> : null}
+            <input
+              type="file"
+              accept="image/*"
+              required={!isEdit}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))
+              }}
+              className="text-xs text-gray-500 file:me-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-950 dark:file:text-brand-300"
+            />
+          </label>
+
+          <TextInput
+            label={t('common.vendorIdOptional')}
+            value={form.vendorId}
+            onChange={(e) => { setForm((f) => ({ ...f, vendorId: e.target.value })) }}
+          />
+          <TextInput
+            label={t('bannerAds.targetUrl')}
+            value={form.targetUrl}
+            onChange={(e) => { setForm((f) => ({ ...f, targetUrl: e.target.value })) }}
+          />
+
+          <div className="flex items-end gap-4">
+            <div className="pb-2">
+              <Checkbox
+                id="is_paid"
+                label={t('bannerAds.paid')}
+                checked={form.isPaid}
+                onChange={(e) => { setForm((f) => ({ ...f, isPaid: e.target.checked })) }}
               />
             </div>
-            <div className="w-56">
+            <div className="flex-1">
               <TextInput
-                label={t('bannerAds.targetUrl')}
-                value={targetUrl}
-                onChange={(e) => {
-                  setTargetUrl(e.target.value)
-                }}
+                type="number"
+                min={0}
+                step="0.01"
+                label={t('bannerAds.price')}
+                disabled={!form.isPaid}
+                value={form.priceUsd}
+                onChange={(e) => { setForm((f) => ({ ...f, priceUsd: e.target.value })) }}
               />
             </div>
             <div className="w-24">
               <TextInput
                 type="number"
                 label={t('bannerAds.priority')}
-                value={priority}
-                onChange={(e) => {
-                  setPriority(Number(e.target.value))
-                }}
+                value={form.priority}
+                onChange={(e) => { setForm((f) => ({ ...f, priority: e.target.value })) }}
               />
             </div>
-            <Checkbox
-              id="is_paid"
-              label={t('bannerAds.paid')}
-              checked={isPaid}
-              onChange={(e) => {
-                setIsPaid(e.target.checked)
-              }}
-            />
-            <Button type="submit" isLoading={createAd.isPending} disabled={!file}>
-              {t('common.create')}
-            </Button>
-          </form>
-          {createAd.isError ? (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{toApiError(createAd.error).user_message}</p>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <TextInput
+                type="datetime-local"
+                label={t('bannerAds.startsAt')}
+                value={form.startsAt}
+                onChange={(e) => { setForm((f) => ({ ...f, startsAt: e.target.value })) }}
+              />
+            </div>
+            <div className="flex-1">
+              <TextInput
+                type="datetime-local"
+                label={t('bannerAds.endsAt')}
+                value={form.endsAt}
+                onChange={(e) => { setForm((f) => ({ ...f, endsAt: e.target.value })) }}
+              />
+            </div>
+          </div>
+
+          {mutation.isError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">{toApiError(mutation.error).user_message}</p>
           ) : null}
-        </CardBody>
-      </Card>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={close}>{t('common.cancel')}</Button>
+            <Button type="submit" isLoading={mutation.isPending} disabled={!isEdit && !form.file}>
+              {isEdit ? t('common.save') : t('common.create')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

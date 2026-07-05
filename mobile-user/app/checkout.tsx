@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, ScrollView, Text, Pressable, View } from 'rea
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
+import * as Location from 'expo-location'
 
 import { Button } from '../src/components/ui/button'
 import { TextField } from '../src/components/ui/text-field'
@@ -23,6 +24,11 @@ export default function CheckoutScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState('USD')
   const [couponCode, setCouponCode] = useState('')
 
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+
   const placeOrder = usePlaceOrder()
 
   const firstItem = items[0]
@@ -33,9 +39,63 @@ export default function CheckoutScreen() {
   const isSchedulingSupported =
     vendorQuery.data?.scheduling_allowed && vendorQuery.data?.scheduling_enabled
 
+  const handleGetLocation = async () => {
+    setLocationLoading(true)
+    setLocationError(null)
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        const errorMsg = t('checkout.locationPermissionDenied', 'Permission to access location was denied')
+        setLocationError(errorMsg)
+        Alert.alert(t('common.error', 'Error'), errorMsg)
+        return
+      }
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      })
+      setLatitude(loc.coords.latitude)
+      setLongitude(loc.coords.longitude)
+
+      // Reverse geocode to retrieve address details
+      const geocoded = await Location.reverseGeocodeAsync({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      })
+      if (geocoded && geocoded.length > 0) {
+        const first = geocoded[0]
+        if (first) {
+          const parts = [
+            first.street,
+            first.name,
+            first.district,
+            first.city,
+            first.country
+          ].filter(Boolean)
+          if (parts.length > 0) {
+            setAddress(parts.join(', '))
+          }
+        }
+      }
+    } catch (err: any) {
+      const failMsg = err?.message || 'Failed to retrieve GPS location'
+      setLocationError(failMsg)
+      Alert.alert(t('common.error', 'Error'), failMsg)
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+
   const handlePlaceOrder = async () => {
     if (!address.trim()) {
       Alert.alert(t('common.error', 'Error'), t('checkout.addressRequired', 'Please enter a delivery address'))
+      return
+    }
+
+    if (!latitude || !longitude) {
+      Alert.alert(
+        t('checkout.locationGpsRequiredTitle', 'GPS Location Required'),
+        t('checkout.locationGpsRequiredMsg', 'Please fetch your current GPS coordinates to ensure accurate delivery.')
+      )
       return
     }
 
@@ -55,8 +115,8 @@ export default function CheckoutScreen() {
       const result = await placeOrder.mutateAsync({
         vendor_id: vendorId,
         items: orderItems,
-        delivery_longitude: 35.5018, // default Beirut lon
-        delivery_latitude: 33.8938,  // default Beirut lat
+        delivery_longitude: longitude,
+        delivery_latitude: latitude,
         scheduled_for: isScheduled && selectedSlot ? selectedSlot : undefined,
         currency_code: selectedCurrency,
         coupon_code: couponCode.trim() ? couponCode.trim() : undefined,
@@ -101,7 +161,7 @@ export default function CheckoutScreen() {
       {/* Header */}
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">
-          <Feather name="arrow-left" size={24} color="#374151" className="dark:text-gray-200" />
+          <Feather name="arrow-left" size={24} color="#374151" />
         </Pressable>
         <Text className="text-base font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
           {t('checkout.title', 'Checkout')}
@@ -121,6 +181,38 @@ export default function CheckoutScreen() {
             value={address}
             onChangeText={setAddress}
           />
+          {/* GPS Coordinates Section */}
+          <View className="flex-row items-center justify-between bg-emerald-50/20 border border-emerald-100 rounded-2xl p-4 mt-1 dark:border-emerald-950 dark:bg-emerald-950/15">
+            <View className="flex-1 mr-4">
+              <Text className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                {t('checkout.gpsLocation', 'GPS Location')}
+              </Text>
+              <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1 font-semibold">
+                {latitude && longitude
+                  ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                  : t('checkout.noGpsFetched', 'No GPS location coordinates loaded')}
+              </Text>
+              {locationError && (
+                <Text className="text-[10px] text-red-500 mt-0.5">{locationError}</Text>
+              )}
+            </View>
+            <Pressable
+              onPress={handleGetLocation}
+              disabled={locationLoading}
+              className="bg-emerald-500 active:bg-emerald-600 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5"
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Feather name="map-pin" size={14} color="#fff" />
+                  <Text className="text-xs font-bold text-white uppercase">
+                    {t('checkout.useCurrentLoc', 'Get GPS')}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Scheduling Section */}

@@ -77,7 +77,7 @@ export default function ProductDetailScreen() {
       {/* Header */}
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">
-          <Feather name="arrow-left" size={24} color="#374151" className="dark:text-gray-200" />
+          <Feather name="arrow-left" size={24} color="#374151" />
         </Pressable>
         <Text className="text-base font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
           {t('product.details', 'Product Details')}

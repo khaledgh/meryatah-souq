@@ -27,6 +27,8 @@
   },
   "auth": {
     "phoneLabel": "Phone number",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
     "passwordLabel": "Password",
     "loginButton": "Sign in",
     "loginError": "Unable to sign in. Check your phone and password.",
@@ -44,6 +46,8 @@
     "edit": "Edit",
     "active": "Active",
     "inactive": "Inactive",
+    "suspend": "Suspend",
+    "activate": "Activate",
     "yes": "Yes",
     "no": "No",
     "search": "Search",
@@ -76,8 +80,16 @@
     "target": "Target",
     "platformWide": "Platform-wide",
     "paid": "Paid",
+    "price": "Price (USD)",
     "priority": "Priority",
+    "schedule": "Schedule",
+    "always": "Always on",
+    "startsAt": "Starts at",
+    "endsAt": "Ends at",
+    "create": "Create ad",
     "createTitle": "Create banner ad",
+    "editTitle": "Edit banner ad",
+    "imageKeepHint": "Leave empty to keep the current image.",
     "targetUrl": "Target URL"
   },
   "settings": {
@@ -88,6 +100,7 @@
   "currencies": {
     "symbol": "Symbol",
     "rate": "Rate",
+    "create": "Add currency",
     "createTitle": "Add currency",
     "decimals": "Decimals"
   },
@@ -163,9 +176,12 @@
     "type": "Type",
     "value": "Value",
     "redemptions": "Redemptions",
+    "starts": "Starts",
     "expires": "Expires",
     "never": "Never",
+    "create": "Create coupon",
     "createTitle": "Create coupon",
+    "editTitle": "Edit coupon",
     "maxRedemptions": "Max redemptions",
     "typePercent": "Percent",
     "typeFixed": "Fixed"
@@ -179,6 +195,15 @@
     "firstName": "First name",
     "lastName": "Last name",
     "create": "Create driver"
+  },
+  "users": {
+    "create": "Add user",
+    "role": "Role",
+    "roleUser": "User",
+    "roleVendor": "Vendor",
+    "roleDriver": "Driver",
+    "phonePlaceholder": "+961…",
+    "vendorOwnerHint": "To create a vendor owner, add a user with the Vendor role here, then assign them when adding a vendor. Approving a vendor application also creates an owner automatically."
   },
   "vendorApplications": {
     "title": "Vendor Onboarding",

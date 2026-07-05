@@ -131,7 +131,7 @@ export function VendorsPage() {
                 <UserPlus className="size-4" aria-hidden="true" /> {t('nav.vendorApplications', { defaultValue: 'Approve Applications' })}
               </Button>
             </Link>
-            <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Button size="sm" onClick={() => { setIsModalOpen(true) }}>
               <Plus className="size-4" aria-hidden="true" /> {t('vendors.addVendor')}
             </Button>
           </div>
@@ -141,10 +141,10 @@ export function VendorsPage() {
 
       <Modal
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false) }}
         title={t('vendors.addVendor', { defaultValue: 'Create Vendor' })}
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-4">
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Owner
@@ -181,7 +181,7 @@ export function VendorsPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => { setIsModalOpen(false) }}
               disabled={isSubmitting}
             >
               {t('common.cancel')}

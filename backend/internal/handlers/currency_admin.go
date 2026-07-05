@@ -48,3 +48,20 @@ func (h *CurrencyAdminHandler) Create(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusCreated)
 }
+
+type setCurrencyActiveRequest struct {
+	Active bool `json:"active"`
+}
+
+// SetActive handles PUT /api/v1/admin/currencies/:code/active (blueprint
+// §11.A11: "activate currency"). The base currency cannot be deactivated.
+func (h *CurrencyAdminHandler) SetActive(c echo.Context) error {
+	var req setCurrencyActiveRequest
+	if err := c.Bind(&req); err != nil {
+		return apperror.BadRequest("invalid request body")
+	}
+	if appErr := h.currencies.SetActive(c.Request().Context(), c.Param("code"), req.Active); appErr != nil {
+		return appErr
+	}
+	return c.NoContent(http.StatusNoContent)
+}

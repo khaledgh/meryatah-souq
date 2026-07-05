@@ -3,6 +3,7 @@ import { getLocales } from 'expo-localization'
 import { initReactI18next } from 'react-i18next'
 
 import en from './locales/en.json'
+import ar from './locales/ar.json'
 
 // Backend-driven i18n (blueprint §6.1): ui_translations fetched via GET
 // /api/v1/i18n/:locale and merged at runtime (see useLocaleBootstrap). This
@@ -24,7 +25,10 @@ function deviceLocale(): SupportedLocale {
 }
 
 void i18n.use(initReactI18next).init({
-  resources: { en: { common: en } },
+  resources: {
+    en: { common: en },
+    ar: { common: ar },
+  },
   lng: deviceLocale(),
   fallbackLng: 'en',
   ns: ['common'],
