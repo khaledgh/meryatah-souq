@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,12 +47,16 @@ func (h *BannerAdHandler) List(c echo.Context) error {
 func (h *BannerAdHandler) Create(c echo.Context) error {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
+		log.Printf("banner_ad: create handler: no multipart \"file\" field received: %v", err)
 		return apperror.BadRequest("file is required (multipart field \"file\")")
 	}
+	log.Printf("banner_ad: create handler: received file %q (%d bytes, header content-type=%q)", fileHeader.Filename, fileHeader.Size, fileHeader.Header.Get("Content-Type"))
 	if storage.IsObviouslyDangerousFilename(fileHeader.Filename) {
+		log.Printf("banner_ad: create handler: rejected dangerous filename %q", fileHeader.Filename)
 		return apperror.Validation("file type not allowed")
 	}
 	if fileHeader.Size > storage.MaxUploadSizeBytes {
+		log.Printf("banner_ad: create handler: file too large (%d > %d)", fileHeader.Size, storage.MaxUploadSizeBytes)
 		return apperror.Validation("file exceeds maximum upload size")
 	}
 	src, err := fileHeader.Open()

@@ -71,23 +71,32 @@ type CreateBannerAdInput struct {
 // caller); vendor_id may be set to attribute the ad to a specific vendor
 // or left nil for a platform ad.
 func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*models.BannerAd, *apperror.AppError) {
+	log.Printf("banner_ad: create: received %d bytes of image data", len(in.ImageData))
+
 	validated, err := storage.ValidateImageUpload(in.ImageData)
 	if err != nil {
+		log.Printf("banner_ad: create: image validation failed: %v", err)
 		return nil, apperror.Validation(err.Error())
 	}
+	log.Printf("banner_ad: create: image validated (ext=%s, contentType=%s, %d bytes)", validated.Extension, validated.ContentType, len(validated.Data))
 
 	objectKey, err := storage.RandomObjectKey("banner-ads", validated.Extension)
 	if err != nil {
+		log.Printf("banner_ad: create: object key generation failed: %v", err)
 		return nil, apperror.Internal(err)
 	}
 
 	driverName, driver, resolveErr := s.storageRegistry.ResolveActive(ctx, s.cache)
 	if resolveErr != nil {
+		log.Printf("banner_ad: create: resolve active storage driver failed: %v", resolveErr)
 		return nil, apperror.Internal(resolveErr)
 	}
+	log.Printf("banner_ad: create: storing object %q on driver %q", objectKey, driverName)
 	if putErr := driver.Put(ctx, objectKey, bytes.NewReader(validated.Data), validated.ContentType); putErr != nil {
+		log.Printf("banner_ad: create: storage Put failed for %q on %q: %v", objectKey, driverName, putErr)
 		return nil, apperror.Internal(putErr)
 	}
+	log.Printf("banner_ad: create: object %q written successfully to driver %q", objectKey, driverName)
 
 	ad := models.BannerAd{
 		ID:            newUUID(),
@@ -103,6 +112,7 @@ func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*
 		IsActive:      true,
 	}
 	if err := s.db.WithContext(ctx).Create(&ad).Error; err != nil {
+		log.Printf("banner_ad: create: DB insert FAILED (%v) — deleting the just-written object %q to avoid orphaning it. THIS is why no file remains in media if the DB write keeps failing (e.g. a missing column).", err, objectKey)
 		// Best-effort cleanup: the file was already written to storage, so
 		// attempt to delete it rather than leaving it to accumulate
 		// unbounded storage cost — same pattern as
@@ -112,6 +122,7 @@ func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*
 		}
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: create: %w", err))
 	}
+	log.Printf("banner_ad: create: SUCCESS — ad %s created with image %q on driver %q", ad.ID, objectKey, driverName)
 	return &ad, nil
 }
 

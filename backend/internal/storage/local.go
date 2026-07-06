@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -73,21 +74,29 @@ func (s *LocalStorage) resolvePath(key string) (string, error) {
 func (s *LocalStorage) Put(ctx context.Context, key string, r io.Reader, contentType string) error {
 	fullPath, err := s.resolvePath(key)
 	if err != nil {
+		log.Printf("storage(local): Put: invalid key %q: %v", key, err)
 		return err
 	}
+	log.Printf("storage(local): Put: writing key %q to %q (baseDir=%q)", key, fullPath, s.baseDir)
+
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+		log.Printf("storage(local): Put: create parent dir %q failed: %v", filepath.Dir(fullPath), err)
 		return fmt.Errorf("storage: create parent dir: %w", err)
 	}
 
 	f, err := os.OpenFile(fullPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
+		log.Printf("storage(local): Put: open %q for write failed (check dir exists + write permission): %v", fullPath, err)
 		return fmt.Errorf("storage: open file for write: %w", err)
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(f, r); err != nil {
+	n, err := io.Copy(f, r)
+	if err != nil {
+		log.Printf("storage(local): Put: writing to %q failed after %d bytes: %v", fullPath, n, err)
 		return fmt.Errorf("storage: write file: %w", err)
 	}
+	log.Printf("storage(local): Put: wrote %d bytes to %q", n, fullPath)
 	return nil
 }
 
