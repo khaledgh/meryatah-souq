@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Dimensions, FlatList, Image, View } from 'react-native'
+import { Animated, Dimensions, FlatList, Image, View, type ViewToken } from 'react-native'
+
+// Static bundled asset — require() is the React Native / Metro idiom for
+// image assets (they resolve to an opaque module id, not a URL).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fallbackImage = require('../../../assets/icon.png') as number
 
 interface CarouselProps {
-  data: Array<{ id: string; image_url?: string; title?: string }>
+  data: Array<{ id: string; image_url?: string | null; title?: string }>
   autoPlay?: boolean
   interval?: number
 }
@@ -30,9 +35,10 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
     return () => clearInterval(timer)
   }, [activeIndex, data.length, autoPlay, interval])
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems[0] !== undefined) {
-      setActiveIndex(viewableItems[0].index)
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const first = viewableItems[0]
+    if (first?.index != null) {
+      setActiveIndex(first.index)
     }
   }).current
 
@@ -74,7 +80,7 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
             ) : (
               <View className="w-full h-full items-center justify-center">
                 <Image
-                  source={require('../../../assets/icon.png')}
+                  source={fallbackImage}
                   className="w-16 h-16 opacity-30"
                   resizeMode="contain"
                 />

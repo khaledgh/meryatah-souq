@@ -6,16 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Carousel } from '../../../src/components/ui/carousel'
 import { SearchBar } from '../../../src/components/ui/search-bar'
+import { useBannerAds } from '../../../src/features/home/use-banner-ads'
 import { useNearbyVendors, type Coordinates, type VendorWithStatus } from '../../../src/features/home/use-nearby-vendors'
 import { vendorDisplayName } from '../../../src/schemas/vendor'
 
 const DEFAULT_LOCATION: Coordinates = { longitude: 35.5018, latitude: 33.8938 }
-
-// Static banner ads for demonstration (since real API might be empty initially)
-const SAMPLE_BANNERS = [
-  { id: '1', title: 'Fresh Groceries Daily' },
-  { id: '2', title: 'Free Delivery on First Order' },
-]
 
 const CATEGORIES = [
   { id: 'all', labelKey: 'categories.all', value: null },
@@ -31,6 +26,7 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const nearby = useNearbyVendors(DEFAULT_LOCATION)
+  const bannerAds = useBannerAds()
 
   const vendors = (nearby.data ?? []).filter((v) => {
     const matchesSearch = !search.trim() || 
@@ -86,8 +82,11 @@ export default function HomeScreen() {
           contentContainerClassName="pb-8"
           ListHeaderComponent={
             <View className="gap-5">
-              {/* Promo Banner Carousel */}
-              <Carousel data={SAMPLE_BANNERS} />
+              {/* Promo Banner Carousel — from the API; hidden when there are
+                  no active ads so we never render an empty band. */}
+              {bannerAds.data && bannerAds.data.length > 0 ? (
+                <Carousel data={bannerAds.data} />
+              ) : null}
 
               {/* Categories Scroll */}
               <View>

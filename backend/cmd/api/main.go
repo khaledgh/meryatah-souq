@@ -89,7 +89,7 @@ func main() {
 		log.Fatalf("bootstrap: %v", err)
 	}
 
-	localStorage, err := storage.NewLocalStorage(cfg.MediaLocalDir, "/media")
+	localStorage, err := storage.NewLocalStorage(cfg.MediaLocalDir, "/media", cfg.PublicBaseURL)
 	if err != nil {
 		log.Fatalf("storage: %v", err)
 	}
@@ -155,7 +155,13 @@ func main() {
 
 	storageHandler := handlers.NewStorageHandler(localStorage, storageRegistry, cache)
 	admin.POST("/storage/test-upload", storageHandler.UploadTest)
-	e.GET("/media/*", storageHandler.ServeLocal, requireAuth)
+	// Public: media holds public catalog/marketing assets (banner ads, vendor
+	// logos, product images) that clients render in <img>/<Image> tags, which
+	// cannot send an Authorization header. Object keys are unguessable random
+	// hex. If private files (e.g. ID documents) are ever stored, they must go
+	// through a SEPARATE authenticated route with an ownership check, not this
+	// one — see the note on StorageHandler.ServeLocal.
+	e.GET("/media/*", storageHandler.ServeLocal)
 
 	vendorService := services.NewVendorService(db)
 	vendorHandler := handlers.NewVendorHandler(vendorService)

@@ -30,9 +30,13 @@ type LocalStorage struct {
 	// urlPrefix is the route path (mounted in main.go) that serves files
 	// from baseDir, e.g. "/media".
 	urlPrefix string
+	// publicBaseURL, when set, is prepended to make an absolute URL (e.g.
+	// "https://api.example.com") so clients on other origins can load media.
+	// Empty → URLs stay relative (dev default).
+	publicBaseURL string
 }
 
-func NewLocalStorage(baseDir, urlPrefix string) (*LocalStorage, error) {
+func NewLocalStorage(baseDir, urlPrefix, publicBaseURL string) (*LocalStorage, error) {
 	absBase, err := filepath.Abs(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("storage: resolve media dir: %w", err)
@@ -40,7 +44,11 @@ func NewLocalStorage(baseDir, urlPrefix string) (*LocalStorage, error) {
 	if err := os.MkdirAll(absBase, 0o755); err != nil {
 		return nil, fmt.Errorf("storage: create media dir: %w", err)
 	}
-	return &LocalStorage{baseDir: absBase, urlPrefix: strings.TrimSuffix(urlPrefix, "/")}, nil
+	return &LocalStorage{
+		baseDir:       absBase,
+		urlPrefix:     strings.TrimSuffix(urlPrefix, "/"),
+		publicBaseURL: strings.TrimSuffix(publicBaseURL, "/"),
+	}, nil
 }
 
 func (s *LocalStorage) resolvePath(key string) (string, error) {
@@ -83,12 +91,13 @@ func (s *LocalStorage) Put(ctx context.Context, key string, r io.Reader, content
 	return nil
 }
 
-// URL returns the authenticated route path that serves this key. ttl is
-// unused for local storage — access control is enforced by the route's own
-// auth middleware, not by URL expiry.
+// URL returns the public route path that serves this key, made absolute with
+// publicBaseURL when configured so clients on other origins can load it. ttl
+// is unused for local storage — the /media route is public (object keys are
+// unguessable), so there is no expiry mechanism.
 func (s *LocalStorage) URL(ctx context.Context, key string, ttl time.Duration) (string, error) {
 	cleanKey := filepath.ToSlash(filepath.Clean("/" + key))
-	return s.urlPrefix + cleanKey, nil
+	return s.publicBaseURL + s.urlPrefix + cleanKey, nil
 }
 
 func (s *LocalStorage) Delete(ctx context.Context, key string) error {

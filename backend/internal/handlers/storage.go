@@ -27,15 +27,16 @@ func NewStorageHandler(local *storage.LocalStorage, registry *storage.Registry, 
 	return &StorageHandler{local: local, registry: registry, cache: cache}
 }
 
-// ServeLocal handles GET /media/*, gated by RequireAuth in main.go. Local
-// storage has no built-in expiring-URL mechanism (unlike S3's presigned
-// URLs), so this route itself is the access control (blueprint §4.4).
-// Any authenticated user of any role can currently read any key under the
-// media root — object keys are unguessable random hex, so this is not
-// exploitable today, but once Phase 6+ features attach owned files (a
-// vendor's product images, a user's uploaded content) this route must add
-// an ownership check the same way order/vendor routes do, not just an
-// authentication check.
+// ServeLocal handles GET /media/*, mounted WITHOUT auth in main.go. The
+// media root holds public catalog/marketing assets (banner ads, vendor
+// logos, product images) that clients render in <img>/<Image> tags, which
+// cannot send an Authorization header — so the route must be public for
+// images to load at all. Object keys are unguessable random hex.
+//
+// IMPORTANT: if private files (e.g. ID documents, KYC uploads) are ever
+// stored, they must NOT live under this public route — add a separate
+// authenticated route with an ownership check for those, the same way
+// order/vendor routes gate access.
 func (h *StorageHandler) ServeLocal(c echo.Context) error {
 	key := c.Param("*")
 	fullPath, err := h.local.ResolveServePath(key)
