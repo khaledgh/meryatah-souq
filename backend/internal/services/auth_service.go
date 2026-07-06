@@ -34,12 +34,25 @@ type AuthTokens struct {
 type AuthService struct {
 	db         *gorm.DB
 	cfg        *config.Config
+	cache      *config.Cache
 	otpService *OTPService
 	audit      *AuditService
 }
 
-func NewAuthService(db *gorm.DB, cfg *config.Config, otpService *OTPService, audit *AuditService) *AuthService {
-	return &AuthService{db: db, cfg: cfg, otpService: otpService, audit: audit}
+func NewAuthService(db *gorm.DB, cfg *config.Config, cache *config.Cache, otpService *OTPService, audit *AuditService) *AuthService {
+	return &AuthService{db: db, cfg: cfg, cache: cache, otpService: otpService, audit: audit}
+}
+
+// VendorLoginMethod returns the admin-configured login method for vendors
+// ("otp" or "password"), defaulting to "otp". Read live from the config cache
+// so an admin change takes effect without restart (blueprint §11.A10). Safe
+// to expose publicly — it only tells a client which login form to show.
+func (s *AuthService) VendorLoginMethod() string {
+	method, _ := s.cache.AppConfigString("vendor_login_method")
+	if method == "password" {
+		return "password"
+	}
+	return "otp"
 }
 
 // CompleteRegistration finishes step 2 of the auth flow for a brand-new
@@ -98,6 +111,16 @@ func (s *AuthService) CompleteRegistration(ctx context.Context, verificationToke
 // factor here — no password step in this path. Blocked if the account is
 // locked or deactivated.
 func (s *AuthService) IssueTokensForVerifiedUser(ctx context.Context, user *models.User, clientIP, userAgent string) (*AuthTokens, *apperror.AppError) {
+	// When the admin has set vendors to password login, vendors must not be
+	// able to sign in via OTP. The phone is already OTP-verified at this point
+	// (so there's no enumeration concern), which lets us return a clear,
+	// actionable message steering them to password login.
+	if user.Role == models.RoleVendor && s.VendorLoginMethod() == "password" {
+		return nil, apperror.New("VENDOR_PASSWORD_LOGIN_REQUIRED", 403,
+			"vendor login method is password; OTP login disabled for vendors",
+			"Please sign in with your password.")
+	}
+
 	if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
 		return nil, apperror.New("ACCOUNT_LOCKED", 423, "account locked", "Too many failed attempts. Try again later.")
 	}
@@ -121,6 +144,13 @@ func (s *AuthService) LoginWithPassword(ctx context.Context, phoneE164, password
 			return nil, apperror.Unauthorized("invalid credentials")
 		}
 		return nil, apperror.Internal(fmt.Errorf("auth: load user: %w", err))
+	}
+
+	// Vendors may only use password login when the admin has selected it as
+	// the global vendor login method; otherwise reject with the same generic
+	// credentials error (no enumeration, identical shape to a wrong password).
+	if user.Role == models.RoleVendor && s.VendorLoginMethod() != "password" {
+		return nil, apperror.Unauthorized("invalid credentials")
 	}
 
 	if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {

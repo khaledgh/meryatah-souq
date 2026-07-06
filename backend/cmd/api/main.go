@@ -79,7 +79,7 @@ func main() {
 	)
 	otpService := services.NewOTPService(db, redisClient, cache, otpRegistry)
 	auditService := services.NewAuditService(db)
-	authService := services.NewAuthService(db, cfg, otpService, auditService)
+	authService := services.NewAuthService(db, cfg, cache, otpService, auditService)
 
 	if err := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -140,6 +140,7 @@ func main() {
 	v1.POST("/auth/verify-otp", authHandler.VerifyOTP)
 	v1.POST("/auth/complete-registration", authHandler.CompleteRegistration)
 	v1.POST("/auth/login-password", authHandler.LoginPassword)
+	v1.GET("/auth/vendor-login-method", authHandler.VendorLoginMethod)
 	v1.POST("/auth/refresh", authHandler.Refresh)
 	v1.POST("/auth/logout", authHandler.Logout)
 
@@ -296,6 +297,7 @@ func main() {
 	admin.GET("/drivers", adminUserHandler.ListDrivers)
 	admin.POST("/drivers", adminUserHandler.CreateDriver)
 	admin.PUT("/users/:userId/active", adminUserHandler.SetActive)
+	admin.PUT("/users/:userId/password", adminUserHandler.SetPassword)
 	admin.POST("/users/:userId/reset-lockout", adminUserHandler.ResetLockout)
 	admin.GET("/vendor-owners", adminUserHandler.ListVendorUsers)
 

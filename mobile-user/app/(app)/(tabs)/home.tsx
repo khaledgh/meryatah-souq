@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native'
+import { useCallback, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -27,6 +27,11 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const nearby = useNearbyVendors(DEFAULT_LOCATION)
   const bannerAds = useBannerAds()
+
+  // Pull-to-refresh: refetch both the vendor list and the promo banners.
+  const onRefresh = useCallback(() => {
+    void Promise.all([nearby.refetch(), bannerAds.refetch()])
+  }, [nearby, bannerAds])
 
   const vendors = (nearby.data ?? []).filter((v) => {
     const matchesSearch = !search.trim() || 
@@ -80,6 +85,14 @@ export default function HomeScreen() {
           data={vendors}
           keyExtractor={(v) => v.id}
           contentContainerClassName="pb-8"
+          refreshControl={
+            <RefreshControl
+              refreshing={nearby.isRefetching || bannerAds.isRefetching}
+              onRefresh={onRefresh}
+              tintColor="#10b981"
+              colors={['#10b981']}
+            />
+          }
           ListHeaderComponent={
             <View className="gap-5">
               {/* Promo Banner Carousel — from the API; hidden when there are

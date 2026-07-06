@@ -196,6 +196,13 @@ func (h *AuthHandler) LoginPassword(c echo.Context) error {
 	})
 }
 
+// VendorLoginMethod handles GET /auth/vendor-login-method — public. Returns
+// the admin-configured method vendors use to sign in ("otp" | "password") so
+// the vendor client can show the right login form. Not a secret.
+func (h *AuthHandler) VendorLoginMethod(c echo.Context) error {
+	return c.JSON(http.StatusOK, echo.Map{"method": h.auth.VendorLoginMethod()})
+}
+
 // Logout handles POST /auth/logout: revokes the given refresh token.
 func (h *AuthHandler) Logout(c echo.Context) error {
 	var req refreshRequest

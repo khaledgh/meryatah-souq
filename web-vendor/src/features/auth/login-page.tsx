@@ -1,5 +1,5 @@
-import { KeyRound, Phone, Store } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { KeyRound, Lock, Phone, Store } from 'lucide-react'
+import { useState, type SyntheticEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -7,21 +7,24 @@ import { Button } from '../../components/ui/button'
 import { TextInput } from '../../components/ui/input'
 import { toApiError } from '../../lib/api-client'
 import { useAuth } from './auth-context'
+import { useVendorLoginMethod } from './use-vendor-login-method'
 
 type Step = 'phone' | 'code'
 
 export function LoginPage() {
   const { t } = useTranslation()
-  const { requestOtp, verifyOtp } = useAuth()
+  const { requestOtp, verifyOtp, loginWithPassword } = useAuth()
   const navigate = useNavigate()
+  const loginMethod = useVendorLoginMethod()
 
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
+  const [password, setPassword] = useState('')
   const [serverError, setServerError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const onRequestOtp = async (e: FormEvent) => {
+  const onRequestOtp = async (e: SyntheticEvent) => {
     e.preventDefault()
     setServerError(null)
     setIsSubmitting(true)
@@ -35,7 +38,7 @@ export function LoginPage() {
     }
   }
 
-  const onVerifyOtp = async (e: FormEvent) => {
+  const onVerifyOtp = async (e: SyntheticEvent) => {
     e.preventDefault()
     setServerError(null)
     setIsSubmitting(true)
@@ -45,6 +48,23 @@ export function LoginPage() {
     } catch (err) {
       // Domain errors thrown by verifyOtp carry a stable code we localize;
       // anything else is a transport/API error normalized by toApiError.
+      const message = err instanceof Error && ['no-vendor-account', 'wrong-role'].includes(err.message)
+        ? t(`auth.errors.${err.message}`)
+        : toApiError(err).user_message
+      setServerError(message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const onLoginPassword = async (e: SyntheticEvent) => {
+    e.preventDefault()
+    setServerError(null)
+    setIsSubmitting(true)
+    try {
+      await loginWithPassword(phone, password)
+      await navigate('/', { replace: true })
+    } catch (err) {
       const message = err instanceof Error && ['no-vendor-account', 'wrong-role'].includes(err.message)
         ? t(`auth.errors.${err.message}`)
         : toApiError(err).user_message
@@ -68,12 +88,42 @@ export function LoginPage() {
           <div>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('auth.loginTitle')}</h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {step === 'phone' ? t('auth.phonePrompt') : t('auth.codePrompt', { phone })}
+              {loginMethod === 'password'
+                ? t('auth.passwordPrompt')
+                : step === 'phone'
+                  ? t('auth.phonePrompt')
+                  : t('auth.codePrompt', { phone })}
             </p>
           </div>
         </div>
 
-        {step === 'phone' ? (
+        {loginMethod === 'password' ? (
+          <form onSubmit={(e) => void onLoginPassword(e)} className="flex flex-col gap-4" noValidate>
+            <TextInput
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              autoFocus
+              label={t('auth.phoneLabel')}
+              icon={<Phone className="size-4" aria-hidden="true" />}
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value) }}
+            />
+            <TextInput
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              label={t('auth.passwordLabel')}
+              icon={<Lock className="size-4" aria-hidden="true" />}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value) }}
+            />
+            {serverError ? <p role="alert" className="text-sm text-red-600 dark:text-red-400">{serverError}</p> : null}
+            <Button type="submit" isLoading={isSubmitting} className="w-full">
+              {t('auth.signIn')}
+            </Button>
+          </form>
+        ) : step === 'phone' ? (
           <form onSubmit={(e) => void onRequestOtp(e)} className="flex flex-col gap-4" noValidate>
             <TextInput
               id="phone"

@@ -54,12 +54,16 @@ func NewOTPService(db *gorm.DB, redisClient *redis.Client, cache *config.Cache, 
 // perspective regardless of whether the phone is already registered — no
 // enumeration.
 func (s *OTPService) RequestOTP(ctx context.Context, phoneE164, clientIP string) *apperror.AppError {
+	log.Printf("otp: request: start for phone=%s ip=%s", phoneE164, clientIP)
+
 	// Reserve the rate-limit slot atomically before doing any other work:
 	// Redis INCR is atomic, so concurrent requests can't all observe an
 	// under-limit count the way a separate read-then-write could.
 	if limited, err := s.reserveRateLimitSlot(ctx, phoneE164, clientIP); err != nil {
+		log.Printf("otp: request: reserve rate-limit slot (Redis) failed: %v", err)
 		return apperror.Internal(err)
 	} else if limited {
+		log.Printf("otp: request: rate limited for phone=%s ip=%s", phoneE164, clientIP)
 		return apperror.TooManyRequests("otp request rate limit exceeded")
 	}
 
@@ -67,8 +71,10 @@ func (s *OTPService) RequestOTP(ctx context.Context, phoneE164, clientIP string)
 	if providerName == "" {
 		providerName = "whatsapp"
 	}
+	log.Printf("otp: request: resolving provider %q", providerName)
 	provider, err := s.registry.Resolve(providerName)
 	if err != nil {
+		log.Printf("otp: request: resolve provider %q failed: %v", providerName, err)
 		return apperror.Internal(fmt.Errorf("otp: resolve provider: %w", err))
 	}
 
@@ -104,13 +110,16 @@ func (s *OTPService) RequestOTP(ctx context.Context, phoneE164, clientIP string)
 		ExpiresAt: time.Now().Add(ttl),
 	}
 	if err := s.db.WithContext(ctx).Create(&challenge).Error; err != nil {
+		log.Printf("otp: request: insert otp_challenges row (DB) failed: %v", err)
 		return apperror.Internal(fmt.Errorf("otp: create challenge: %w", err))
 	}
 
 	redisKey := otpRedisKeyPrefix + challenge.ID
 	if err := s.redis.Set(ctx, redisKey, hashOTP(code), ttl).Err(); err != nil {
+		log.Printf("otp: request: store code in Redis failed: %v", err)
 		return apperror.Internal(fmt.Errorf("otp: store code: %w", err))
 	}
+	log.Printf("otp: request: challenge %s created and code stored (provider=%s, ttl=%s)", challenge.ID, providerName, ttl)
 
 	// Development convenience: with no real SMS/WhatsApp provider configured
 	// locally, the code is never delivered anywhere, making OTP login

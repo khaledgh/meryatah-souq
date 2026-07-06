@@ -26,11 +26,14 @@
   "auth": {
     "loginTitle": "Vendor sign-in",
     "phonePrompt": "Enter your phone number to receive a login code.",
+    "passwordPrompt": "Enter your phone number and password to sign in.",
     "codePrompt": "Enter the code sent to {{phone}}.",
     "phoneLabel": "Phone number",
+    "passwordLabel": "Password",
     "codeLabel": "Verification code",
     "sendCode": "Send code",
     "verify": "Verify & sign in",
+    "signIn": "Sign in",
     "changePhone": "Use a different number",
     "errors": {
       "no-vendor-account": "No vendor account is registered for this number.",

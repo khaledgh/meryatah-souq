@@ -48,6 +48,14 @@ export function useCreateDriver() {
   })
 }
 
+export function useSetUserPassword() {
+  return useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      await apiClient.put(`/admin/users/${userId}/password`, { password })
+    },
+  })
+}
+
 export function useResetLockout(role: 'user' | 'driver') {
   const queryClient = useQueryClient()
   return useMutation({

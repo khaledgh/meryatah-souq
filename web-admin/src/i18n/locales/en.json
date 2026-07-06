@@ -63,6 +63,10 @@
   },
   "vendors": {
     "addVendor": "Add vendor",
+    "setPassword": "Set password",
+    "setPasswordTitle": "Set password: {{name}}",
+    "setPasswordDescription": "Set or reset this vendor owner's password so they can sign in with a password (when vendor login method is \"password\").",
+    "setPasswordPlaceholder": "At least 8 characters",
     "commissionPct": "Commission %",
     "scheduling": "Scheduling",
     "profile": "Profile",

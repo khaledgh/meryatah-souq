@@ -1,4 +1,4 @@
-import { CalendarClock, Pencil, Power, Plus, UserPlus } from 'lucide-react'
+import { CalendarClock, KeyRound, Pencil, Power, Plus, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -11,8 +11,9 @@ import { Modal } from '../../components/ui/modal'
 import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
+import { toApiError } from '../../lib/api-client'
 import { vendorDisplayName, type Vendor } from '../../schemas/vendor'
-import { useVendorOwners } from '../users/use-admin-users'
+import { useSetUserPassword, useVendorOwners } from '../users/use-admin-users'
 import { useSetVendorActive, useCreateVendor, useVendors } from './use-vendors'
 
 interface VendorFormValues {
@@ -34,6 +35,12 @@ export function VendorsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { data: owners } = useVendorOwners()
   const createVendor = useCreateVendor()
+
+  // Set-password modal for a vendor's owner account (enables password login
+  // when the admin selects "password" as the vendor login method).
+  const setPassword = useSetUserPassword()
+  const [passwordTarget, setPasswordTarget] = useState<Vendor | null>(null)
+  const [newPassword, setNewPassword] = useState('')
 
   const {
     register,
@@ -115,6 +122,17 @@ export function VendorsPage() {
           >
             <Power className="size-3.5" aria-hidden="true" /> {v.is_active ? t('common.inactive') : t('common.active')}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setNewPassword('')
+              setPassword.reset()
+              setPasswordTarget(v)
+            }}
+            className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <KeyRound className="size-3.5" aria-hidden="true" /> {t('vendors.setPassword')}
+          </button>
         </div>
       ),
     },
@@ -189,6 +207,43 @@ export function VendorsPage() {
             <Button type="submit" isLoading={isSubmitting}>
               {t('common.create', { defaultValue: 'Create' })}
             </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={passwordTarget !== null}
+        onClose={() => { setPasswordTarget(null) }}
+        title={t('vendors.setPasswordTitle', { name: passwordTarget ? vendorDisplayName(passwordTarget, i18n.language) : '' })}
+        description={t('vendors.setPasswordDescription')}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!passwordTarget) return
+            setPassword.mutate(
+              { userId: passwordTarget.owner_user_id, password: newPassword },
+              { onSuccess: () => { setPasswordTarget(null) } },
+            )
+          }}
+          className="flex flex-col gap-4"
+        >
+          <Input
+            label={t('auth.passwordLabel')}
+            type="password"
+            required
+            minLength={8}
+            autoFocus
+            value={newPassword}
+            onChange={(e) => { setNewPassword(e.target.value) }}
+            placeholder={t('vendors.setPasswordPlaceholder')}
+          />
+          {setPassword.isError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">{toApiError(setPassword.error).user_message}</p>
+          ) : null}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => { setPasswordTarget(null) }}>{t('common.cancel')}</Button>
+            <Button type="submit" isLoading={setPassword.isPending}>{t('common.save')}</Button>
           </div>
         </form>
       </Modal>

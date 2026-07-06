@@ -129,6 +129,36 @@ func (h *AdminUserHandler) CreateUser(c echo.Context) error {
 	return c.JSON(http.StatusCreated, echo.Map{"data": user})
 }
 
+type setUserPasswordRequest struct {
+	Password string `json:"password"`
+}
+
+// SetPassword handles PUT /api/v1/admin/users/:userId/password (super_admin
+// only). Sets/resets a user's password — used to give vendor accounts a
+// password for password-based login (blueprint §11.A10). The password is
+// never logged; the action is audited.
+func (h *AdminUserHandler) SetPassword(c echo.Context) error {
+	var req setUserPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return apperror.BadRequest("invalid request body")
+	}
+
+	userID := c.Param("userId")
+	role, appErr := h.users.SetPassword(c.Request().Context(), userID, req.Password)
+	if appErr != nil {
+		return appErr
+	}
+
+	if actorID, ok := appmw.UserID(c); ok {
+		actorRole := models.RoleSuperAdmin
+		// Record the target user's role in the audit metadata (never the password).
+		h.audit.Log(c.Request().Context(), &actorID, &actorRole, "user.set_password", "users", &userID,
+			c.RealIP(), map[string]any{"target_role": string(role)})
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 // ListVendorUsers handles GET /api/v1/admin/vendor-owners (super_admin only).
 // Lists all users who have the "vendor" role.
 func (h *AdminUserHandler) ListVendorUsers(c echo.Context) error {

@@ -16,6 +16,10 @@ interface AuthContextValue {
   // verifyOtp resolves to true when a vendor session was established, or
   // throws with a user-facing message otherwise (wrong role, no account).
   verifyOtp: (phone: string, code: string) => Promise<void>
+  // loginWithPassword establishes a vendor session via phone+password (used
+  // when the admin sets the vendor login method to "password"). Throws with a
+  // stable code on wrong-role / no-vendor-account, same as verifyOtp.
+  loginWithPassword: (phone: string, password: string) => Promise<void>
   setVendor: (vendor: Vendor) => void
   logout: () => void
 }
@@ -35,12 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const refreshToken = getRefreshToken()
       if (!refreshToken) {
-        if (!cancelled) setIsRestoring(false)
+        // No await yet, so the effect can't have been cancelled.
+        setIsRestoring(false)
         return
       }
       try {
         const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
         const parsed = authResponseSchema.parse(response.data)
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is set by the cleanup fn after this await; not statically visible.
         if (cancelled) return
         if (parsed.user.role !== 'vendor') {
           clearSession()
@@ -48,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAccessToken(parsed.access_token)
           setRefreshToken(parsed.refresh_token)
           const meResponse = await apiClient.get<unknown>('/vendor/me')
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- same async-cancellation flag as above.
           if (cancelled) return
           setVendorState(vendorDetailSchema.parse(meResponse.data).data)
           setUser(parsed.user)
@@ -55,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         clearSession()
       } finally {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- same async-cancellation flag as above.
         if (!cancelled) setIsRestoring(false)
       }
     })()
@@ -67,12 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiClient.post('/auth/request-otp', { phone })
   }, [])
 
-  const verifyOtp = useCallback(async (phone: string, code: string) => {
-    const response = await apiClient.post<unknown>('/auth/verify-otp', { phone, code })
-    const parsed = verifyOtpResponseSchema.parse(response.data)
+  // establishSession validates a login response, stores tokens, resolves the
+  // vendor, and sets user state. Shared by OTP and password login. Throws a
+  // stable code ('no-vendor-account' | 'wrong-role') the login page localizes.
+  const establishSession = useCallback(async (data: unknown) => {
+    const parsed = verifyOtpResponseSchema.parse(data)
 
     // A brand-new phone has no vendor account — approval creates the account,
-    // so "register_required" here means this phone isn't an approved vendor.
+    // so a non-login status here means this phone isn't an approved vendor.
     if (parsed.status !== 'login' || !parsed.access_token || !parsed.refresh_token || !parsed.user) {
       throw new Error('no-vendor-account')
     }
@@ -97,6 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(parsed.user)
   }, [])
 
+  const verifyOtp = useCallback(async (phone: string, code: string) => {
+    const response = await apiClient.post<unknown>('/auth/verify-otp', { phone, code })
+    await establishSession(response.data)
+  }, [establishSession])
+
+  const loginWithPassword = useCallback(async (phone: string, password: string) => {
+    const response = await apiClient.post<unknown>('/auth/login-password', { phone, password })
+    await establishSession(response.data)
+  }, [establishSession])
+
   const setVendor = useCallback((next: Vendor) => {
     setVendorState(next)
   }, [])
@@ -115,10 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isRestoring,
       requestOtp,
       verifyOtp,
+      loginWithPassword,
       setVendor,
       logout,
     }),
-    [user, vendor, isRestoring, requestOtp, verifyOtp, setVendor, logout],
+    [user, vendor, isRestoring, requestOtp, verifyOtp, loginWithPassword, setVendor, logout],
   )
 
   return <AuthContext value={value}>{children}</AuthContext>

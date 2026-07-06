@@ -10,7 +10,11 @@ import (
 	"meryata-souq/backend/internal/models"
 	"meryata-souq/backend/internal/pkg/apperror"
 	"meryata-souq/backend/internal/pkg/phone"
+	"meryata-souq/backend/internal/pkg/security"
 )
+
+// minPasswordLength matches the self-registration rule (handlers/auth.go).
+const minPasswordLength = 8
 
 // AdminUserService implements super_admin-facing user/driver management
 // reads (blueprint §11.A6 Drivers, §11.A7 Users).
@@ -160,4 +164,34 @@ func (s *AdminUserService) CreateUser(ctx context.Context, in CreateUserInput) (
 		return nil, apperror.Internal(fmt.Errorf("admin_user: create user: %w", err))
 	}
 	return &user, nil
+}
+
+// SetPassword sets (or resets) a user's password (super_admin only). Used to
+// give vendor-role accounts a password so they can use password login when
+// the admin selects that vendor login method (blueprint §11.A10). The plain
+// password is never logged. Returns the affected user's role so the caller
+// can audit accurately.
+func (s *AdminUserService) SetPassword(ctx context.Context, userID, password string) (models.UserRole, *apperror.AppError) {
+	if len(password) < minPasswordLength {
+		return "", apperror.Validation(fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+	}
+
+	var user models.User
+	if err := s.db.WithContext(ctx).Where("id = ?", userID).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", apperror.NotFound("user")
+		}
+		return "", apperror.Internal(fmt.Errorf("admin_user: load user for set password: %w", err))
+	}
+
+	hash, err := security.HashPassword(password)
+	if err != nil {
+		return "", apperror.Internal(fmt.Errorf("admin_user: hash password: %w", err))
+	}
+
+	if err := s.db.WithContext(ctx).Model(&models.User{}).Where("id = ?", userID).
+		Update("password_hash", hash).Error; err != nil {
+		return "", apperror.Internal(fmt.Errorf("admin_user: update password: %w", err))
+	}
+	return user.Role, nil
 }

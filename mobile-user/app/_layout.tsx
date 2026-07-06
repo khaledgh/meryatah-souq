@@ -1,9 +1,7 @@
 import '../global.css'
 
 import { useEffect } from 'react'
-import { Feather, Ionicons } from '@expo/vector-icons'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -37,27 +35,19 @@ function LocaleBootstrap() {
 
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme()
-  const [fontsLoaded, fontError] = useFonts({
-    ...Feather.font,
-    ...Ionicons.font,
-  })
 
   useEffect(() => {
     setColorScheme('light')
   }, [])
 
+  // Icon fonts (Feather, Ionicons) are embedded natively via the expo-font
+  // config plugin in app.json, so they're registered by the OS at install and
+  // don't need a runtime useFonts() download — that download path (expo-asset)
+  // was failing on device and is unnecessary here. Just hide the splash once
+  // mounted; the embedded glyphs render immediately.
   useEffect(() => {
-    if (fontError) {
-      console.error('[fonts] icon font load failed:', fontError)
-    }
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync()
-    }
-  }, [fontsLoaded, fontError])
-
-  if (!fontsLoaded && !fontError) {
-    return null
-  }
+    void SplashScreen.hideAsync()
+  }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
