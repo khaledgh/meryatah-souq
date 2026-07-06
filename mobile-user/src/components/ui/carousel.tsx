@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Dimensions, FlatList, Image, View, type ViewToken } from 'react-native'
 
+import { resolveMediaUrl } from '../../lib/media'
+
 // Static bundled asset — require() is the React Native / Metro idiom for
 // image assets (they resolve to an opaque module id, not a URL).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -66,14 +68,16 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
           { useNativeDriver: false }
         )}
         contentContainerStyle={{ paddingHorizontal: 20 }}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const uri = resolveMediaUrl(item.image_url)
+          return (
           <View
             style={{ width: CAROUSEL_WIDTH }}
             className="mr-3 h-40 rounded-3xl overflow-hidden bg-emerald-50 dark:bg-emerald-950/20"
           >
-            {item.image_url ? (
+            {uri ? (
               <Image
-                source={{ uri: item.image_url }}
+                source={{ uri }}
                 className="w-full h-full"
                 resizeMode="cover"
               />
@@ -87,7 +91,8 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
               </View>
             )}
           </View>
-        )}
+          )
+        }}
         keyExtractor={(item) => item.id}
       />
 

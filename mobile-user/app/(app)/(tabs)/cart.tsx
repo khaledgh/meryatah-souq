@@ -8,6 +8,7 @@ import { Button } from '../../../src/components/ui/button'
 import { EmptyState } from '../../../src/components/ui/empty-state'
 import { QuantityStepper } from '../../../src/components/ui/quantity-stepper'
 import { useCart } from '../../../src/features/cart/cart-context'
+import { resolveMediaUrl } from '../../../src/lib/media'
 
 export default function CartScreen() {
   const { t } = useTranslation()
@@ -55,8 +56,8 @@ export default function CartScreen() {
         renderItem={({ item }) => (
           <View className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 shadow-sm">
             <View className="size-16 rounded-xl bg-gray-100 dark:bg-gray-800 overflow-hidden items-center justify-center">
-              {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} className="w-full h-full" />
+              {resolveMediaUrl(item.imageUrl) ? (
+                <Image source={{ uri: resolveMediaUrl(item.imageUrl) }} className="w-full h-full" />
               ) : (
                 <Feather name="image" size={24} color="#9ca3af" />
               )}

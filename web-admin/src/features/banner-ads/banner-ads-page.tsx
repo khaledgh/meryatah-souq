@@ -10,6 +10,7 @@ import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
+import { resolveMediaUrl } from '../../lib/media'
 import type { BannerAd } from '../../schemas/banner-ad'
 import {
   useBannerAds,
@@ -64,10 +65,11 @@ const emptyForm: AdFormState = {
 // so a bad URL degrades gracefully instead of showing a broken-image glyph.
 function AdThumbnail({ url }: { url?: string | null }) {
   const [failed, setFailed] = useState(false)
-  if (url && !failed) {
+  const resolved = resolveMediaUrl(url)
+  if (resolved && !failed) {
     return (
       <img
-        src={url}
+        src={resolved}
         alt=""
         onError={() => { setFailed(true) }}
         className="h-10 w-16 rounded-md object-cover ring-1 ring-gray-200 dark:ring-gray-800"

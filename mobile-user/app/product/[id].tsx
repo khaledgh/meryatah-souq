@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons'
 
 import { Button } from '../../src/components/ui/button'
 import { QuantityStepper } from '../../src/components/ui/quantity-stepper'
+import { resolveMediaUrl } from '../../src/lib/media'
 import { useCart } from '../../src/features/cart/cart-context'
 import { useProduct, useVendor } from '../../src/features/vendor/use-vendor'
 import { vendorDisplayName } from '../../src/schemas/vendor'
@@ -101,7 +102,7 @@ export default function ProductDetailScreen() {
                   keyExtractor={(img) => img.id}
                   renderItem={({ item }) => (
                     <View style={{ width: 400, height: 288 }} className="items-center justify-center">
-                      <Image source={{ uri: item.url }} className="w-full h-full" resizeMode="contain" />
+                      <Image source={{ uri: resolveMediaUrl(item.url) }} className="w-full h-full" resizeMode="contain" />
                     </View>
                   )}
                 />
