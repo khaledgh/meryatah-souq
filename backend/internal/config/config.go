@@ -38,12 +38,12 @@ type Config struct {
 
 	StorageDriver string
 	MediaLocalDir string
-	// MediaBaseURL is the full, externally-reachable base URL that serves
-	// locally-stored media, e.g. "https://souq-api.example.com/media" or a
-	// separate host/CDN like "https://media.example.com". An object key is
-	// appended to it to form each image_url. When empty, URLs fall back to
-	// the relative "/media" path (dev default). Configured independently of
-	// the API origin so media can live on a different host.
+	// MediaBaseURL is the external ORIGIN that serves locally-stored media —
+	// e.g. "https://souq-api.example.com" or a separate host/CDN like
+	// "https://media.example.com". The "/media" route path and the object key
+	// are appended by the storage layer, so this must be the origin ONLY
+	// (a trailing "/media" is stripped defensively). When empty, image URLs
+	// are relative (dev default).
 	MediaBaseURL string
 
 	AWSRegion          string
@@ -87,7 +87,7 @@ func Load() (*Config, error) {
 
 		StorageDriver: getEnv("STORAGE_DRIVER", "local"),
 		MediaLocalDir: getEnv("MEDIA_LOCAL_DIR", "./media"),
-		MediaBaseURL:  strings.TrimSuffix(os.Getenv("MEDIA_BASE_URL"), "/"),
+		MediaBaseURL:  normalizeMediaBaseURL(os.Getenv("MEDIA_BASE_URL")),
 
 		AWSRegion:          os.Getenv("AWS_REGION"),
 		AWSS3Bucket:        os.Getenv("AWS_S3_BUCKET"),
@@ -148,6 +148,17 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// normalizeMediaBaseURL reduces MEDIA_BASE_URL to a bare origin. The storage
+// layer always appends the "/media" route path itself, so we strip any
+// trailing slash AND a trailing "/media" the operator may have included —
+// this prevents a doubled "/media/media/..." if MEDIA_BASE_URL was set to
+// ".../media" rather than just the origin.
+func normalizeMediaBaseURL(raw string) string {
+	v := strings.TrimSuffix(raw, "/")
+	v = strings.TrimSuffix(v, "/media")
+	return strings.TrimSuffix(v, "/")
 }
 
 func parseDurationEnv(key, fallback string) (time.Duration, error) {

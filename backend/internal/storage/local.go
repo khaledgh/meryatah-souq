@@ -102,17 +102,16 @@ func (s *LocalStorage) Put(ctx context.Context, key string, r io.Reader, content
 	return nil
 }
 
-// URL returns the public URL that serves this key. When mediaBaseURL is set
-// it is the full external media base (possibly a different host/CDN than the
-// API) with the key appended; otherwise it falls back to the relative
-// urlPrefix. ttl is unused for local storage — the /media route is public
-// (object keys are unguessable), so there is no expiry mechanism.
+// URL returns the public URL that serves this key: <mediaBaseURL><urlPrefix>/<key>.
+// mediaBaseURL is the external ORIGIN only (e.g. "https://souq-api.example.com"
+// or a CDN host) — it must NOT include the "/media" route path, which is
+// always added here as urlPrefix. This guarantees exactly one "/media"
+// segment regardless of how MEDIA_BASE_URL is configured. When mediaBaseURL is
+// empty the URL is relative (dev default). ttl is unused for local storage —
+// the /media route is public (object keys are unguessable), so no expiry.
 func (s *LocalStorage) URL(ctx context.Context, key string, ttl time.Duration) (string, error) {
 	cleanKey := filepath.ToSlash(filepath.Clean("/" + key))
-	if s.mediaBaseURL != "" {
-		return s.mediaBaseURL + cleanKey, nil
-	}
-	return s.urlPrefix + cleanKey, nil
+	return s.mediaBaseURL + s.urlPrefix + cleanKey, nil
 }
 
 func (s *LocalStorage) Delete(ctx context.Context, key string) error {
