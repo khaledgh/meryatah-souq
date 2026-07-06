@@ -89,7 +89,7 @@ func main() {
 		log.Fatalf("bootstrap: %v", err)
 	}
 
-	localStorage, err := storage.NewLocalStorage(cfg.MediaLocalDir, "/media", cfg.PublicBaseURL)
+	localStorage, err := storage.NewLocalStorage(cfg.MediaLocalDir, "/media", cfg.MediaBaseURL)
 	if err != nil {
 		log.Fatalf("storage: %v", err)
 	}

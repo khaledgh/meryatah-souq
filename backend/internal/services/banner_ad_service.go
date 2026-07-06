@@ -30,6 +30,22 @@ func NewBannerAdService(db *gorm.DB, cache *config.Cache, storageRegistry *stora
 	return &BannerAdService{db: db, cache: cache, storageRegistry: storageRegistry}
 }
 
+// resolveImageURLs fills ImageURL for each ad from its stored ImageKey +
+// StorageDriver via the storage registry. Every method that returns ads to a
+// client must call this — ImageURL is a computed field (gorm:"-"), not a DB
+// column, so it is empty until resolved. A failure to resolve one ad's URL
+// leaves that ad's ImageURL empty (client shows its placeholder) rather than
+// failing the whole list.
+func (s *BannerAdService) resolveImageURLs(ctx context.Context, ads []models.BannerAd) {
+	for i := range ads {
+		if driver, resolveErr := s.storageRegistry.Resolve(ads[i].StorageDriver); resolveErr == nil {
+			if url, urlErr := driver.URL(ctx, ads[i].ImageKey, 0); urlErr == nil {
+				ads[i].ImageURL = url
+			}
+		}
+	}
+}
+
 // ListActive returns currently-active, in-schedule-window ads, highest
 // priority first (blueprint §11.C5). Public — any user/guest sees ads.
 func (s *BannerAdService) ListActive(ctx context.Context) ([]models.BannerAd, *apperror.AppError) {
@@ -45,13 +61,7 @@ func (s *BannerAdService) ListActive(ctx context.Context) ([]models.BannerAd, *a
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: list active: %w", err))
 	}
 
-	for i := range ads {
-		if driver, resolveErr := s.storageRegistry.Resolve(ads[i].StorageDriver); resolveErr == nil {
-			if url, urlErr := driver.URL(ctx, ads[i].ImageKey, 0); urlErr == nil {
-				ads[i].ImageURL = url
-			}
-		}
-	}
+	s.resolveImageURLs(ctx, ads)
 	return ads, nil
 }
 
@@ -123,6 +133,11 @@ func (s *BannerAdService) Create(ctx context.Context, in CreateBannerAdInput) (*
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: create: %w", err))
 	}
 	log.Printf("banner_ad: create: SUCCESS — ad %s created with image %q on driver %q", ad.ID, objectKey, driverName)
+	// Resolve ImageURL so the create response carries a usable image link,
+	// same as the list endpoints. We already hold the driver, so reuse it.
+	if url, urlErr := driver.URL(ctx, objectKey, 0); urlErr == nil {
+		ad.ImageURL = url
+	}
 	return &ad, nil
 }
 
@@ -207,6 +222,12 @@ func (s *BannerAdService) Update(ctx context.Context, adID string, in UpdateBann
 			}
 		}
 	}
+	// Resolve ImageURL so the update response carries a usable image link.
+	if driver, resolveErr := s.storageRegistry.Resolve(ad.StorageDriver); resolveErr == nil {
+		if url, urlErr := driver.URL(ctx, ad.ImageKey, 0); urlErr == nil {
+			ad.ImageURL = url
+		}
+	}
 	return &ad, nil
 }
 
@@ -244,5 +265,6 @@ func (s *BannerAdService) List(ctx context.Context) ([]models.BannerAd, *apperro
 	if err := s.db.WithContext(ctx).Order("priority DESC").Find(&ads).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: list: %w", err))
 	}
+	s.resolveImageURLs(ctx, ads)
 	return ads, nil
 }

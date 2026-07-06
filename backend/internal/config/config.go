@@ -38,11 +38,13 @@ type Config struct {
 
 	StorageDriver string
 	MediaLocalDir string
-	// PublicBaseURL is the externally-reachable origin of this API (e.g.
-	// https://souq-api.example.com), used to build absolute URLs for
-	// locally-served media so clients on other origins (admin dashboard,
-	// mobile app) can load images. Empty → URLs stay relative (dev default).
-	PublicBaseURL string
+	// MediaBaseURL is the full, externally-reachable base URL that serves
+	// locally-stored media, e.g. "https://souq-api.example.com/media" or a
+	// separate host/CDN like "https://media.example.com". An object key is
+	// appended to it to form each image_url. When empty, URLs fall back to
+	// the relative "/media" path (dev default). Configured independently of
+	// the API origin so media can live on a different host.
+	MediaBaseURL string
 
 	AWSRegion          string
 	AWSS3Bucket        string
@@ -85,7 +87,7 @@ func Load() (*Config, error) {
 
 		StorageDriver: getEnv("STORAGE_DRIVER", "local"),
 		MediaLocalDir: getEnv("MEDIA_LOCAL_DIR", "./media"),
-		PublicBaseURL: strings.TrimSuffix(os.Getenv("PUBLIC_BASE_URL"), "/"),
+		MediaBaseURL:  strings.TrimSuffix(os.Getenv("MEDIA_BASE_URL"), "/"),
 
 		AWSRegion:          os.Getenv("AWS_REGION"),
 		AWSS3Bucket:        os.Getenv("AWS_S3_BUCKET"),

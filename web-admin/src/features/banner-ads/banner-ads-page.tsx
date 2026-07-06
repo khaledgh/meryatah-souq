@@ -59,6 +59,28 @@ const emptyForm: AdFormState = {
   endsAt: '',
 }
 
+// Thumbnail that falls back to the placeholder icon both when there's no URL
+// and when the image fails to load (broken link, media host unreachable),
+// so a bad URL degrades gracefully instead of showing a broken-image glyph.
+function AdThumbnail({ url }: { url?: string | null }) {
+  const [failed, setFailed] = useState(false)
+  if (url && !failed) {
+    return (
+      <img
+        src={url}
+        alt=""
+        onError={() => { setFailed(true) }}
+        className="h-10 w-16 rounded-md object-cover ring-1 ring-gray-200 dark:ring-gray-800"
+      />
+    )
+  }
+  return (
+    <span className="flex h-10 w-16 items-center justify-center rounded-md bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
+      <ImageIcon className="size-4" aria-hidden="true" />
+    </span>
+  )
+}
+
 function adToForm(ad: BannerAd): AdFormState {
   return {
     file: null,
@@ -132,14 +154,7 @@ export function BannerAdsPage() {
     {
       key: 'image',
       header: t('bannerAds.image'),
-      render: (a) =>
-        a.image_url ? (
-          <img src={a.image_url} alt="" className="h-10 w-16 rounded-md object-cover ring-1 ring-gray-200 dark:ring-gray-800" />
-        ) : (
-          <span className="flex h-10 w-16 items-center justify-center rounded-md bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
-            <ImageIcon className="size-4" aria-hidden="true" />
-          </span>
-        ),
+      render: (a) => <AdThumbnail url={a.image_url} />,
     },
     { key: 'target', header: t('bannerAds.target'), render: (a) => a.vendor_id ?? t('bannerAds.platformWide') },
     {
