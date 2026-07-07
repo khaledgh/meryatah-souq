@@ -21,13 +21,14 @@ func NewVendorHandler(vendors *services.VendorService) *VendorHandler {
 }
 
 type createVendorRequest struct {
-	OwnerUserID string          `json:"owner_user_id"`
-	NameI18n    json.RawMessage `json:"name_i18n"`
-	Category    string          `json:"category"`
-	Longitude   float64         `json:"longitude"`
-	Latitude    float64         `json:"latitude"`
-	Address     string          `json:"address"`
-	Timezone    string          `json:"timezone"`
+	OwnerUserID     string          `json:"owner_user_id"`
+	NameI18n        json.RawMessage `json:"name_i18n"`
+	Category        string          `json:"category"`
+	StoreCategoryID *string         `json:"store_category_id,omitempty"`
+	Longitude       float64         `json:"longitude"`
+	Latitude        float64         `json:"latitude"`
+	Address         string          `json:"address"`
+	Timezone        string          `json:"timezone"`
 }
 
 // Create handles POST /api/v1/admin/vendors (super_admin only, blueprint
@@ -42,13 +43,14 @@ func (h *VendorHandler) Create(c echo.Context) error {
 	}
 
 	vendor, appErr := h.vendors.Create(c.Request().Context(), services.CreateVendorInput{
-		OwnerUserID: req.OwnerUserID,
-		NameI18n:    req.NameI18n,
-		Category:    req.Category,
-		Longitude:   req.Longitude,
-		Latitude:    req.Latitude,
-		Address:     req.Address,
-		Timezone:    req.Timezone,
+		OwnerUserID:     req.OwnerUserID,
+		NameI18n:        req.NameI18n,
+		Category:        req.Category,
+		StoreCategoryID: req.StoreCategoryID,
+		Longitude:       req.Longitude,
+		Latitude:        req.Latitude,
+		Address:         req.Address,
+		Timezone:        req.Timezone,
 	})
 	if appErr != nil {
 		return appErr
@@ -97,7 +99,12 @@ func (h *VendorHandler) Nearby(c echo.Context) error {
 	radius, _ := parseFloatQuery(c, "radius_m")
 	limit, _ := parseIntQuery(c, "limit")
 
-	vendors, appErr := h.vendors.Nearby(c.Request().Context(), lon, lat, radius, limit)
+	var storeCategoryID *string
+	if v := c.QueryParam("store_category_id"); v != "" {
+		storeCategoryID = &v
+	}
+
+	vendors, appErr := h.vendors.Nearby(c.Request().Context(), lon, lat, radius, limit, storeCategoryID)
 	if appErr != nil {
 		return appErr
 	}
@@ -107,6 +114,7 @@ func (h *VendorHandler) Nearby(c echo.Context) error {
 type updateVendorRequest struct {
 	NameI18n        *json.RawMessage `json:"name_i18n,omitempty"`
 	Category        *string          `json:"category,omitempty"`
+	StoreCategoryID *string          `json:"store_category_id,omitempty"`
 	Address         *string          `json:"address,omitempty"`
 	LogoURL         *string          `json:"logo_url,omitempty"`
 	Timezone        *string          `json:"timezone,omitempty"`
@@ -128,6 +136,7 @@ func (h *VendorHandler) Update(c echo.Context) error {
 	vendor, appErr := h.vendors.Update(c.Request().Context(), vendorID, services.UpdateVendorInput{
 		NameI18n:        req.NameI18n,
 		Category:        req.Category,
+		StoreCategoryID: req.StoreCategoryID,
 		Address:         req.Address,
 		LogoURL:         req.LogoURL,
 		Timezone:        req.Timezone,

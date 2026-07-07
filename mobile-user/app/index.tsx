@@ -22,7 +22,7 @@ export default function Index() {
   if (localeChosen === null || onboarded === null || isInitializing) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950">
-        <ActivityIndicator color="#10b981" />
+        <ActivityIndicator color="#f59e0b" />
       </View>
     )
   }

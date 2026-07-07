@@ -37,14 +37,14 @@ export default function CouponsScreen() {
         keyExtractor={(item) => item.code}
         contentContainerClassName="p-5 gap-4"
         renderItem={({ item }) => (
-          <View className="border border-emerald-100 rounded-3xl bg-emerald-50/10 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/10 gap-3">
+          <View className="border border-brand-100 rounded-3xl bg-brand-50/10 p-5 dark:border-brand-900/30 dark:bg-brand-950/10 gap-3">
             <View className="flex-row justify-between items-center">
-              <View className="bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-xl">
-                <Text className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+              <View className="bg-brand-100 dark:bg-brand-950 px-3 py-1 rounded-xl">
+                <Text className="text-sm font-black text-brand-700 dark:text-brand-400">
                   {item.code}
                 </Text>
               </View>
-              <Text className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+              <Text className="text-lg font-black text-brand-600 dark:text-brand-400">
                 {item.value} OFF
               </Text>
             </View>
@@ -55,7 +55,7 @@ export default function CouponsScreen() {
 
             <Pressable
               onPress={() => copyToClipboard(item.code)}
-              className="flex-row items-center justify-center gap-2 bg-emerald-500 rounded-2xl py-3 mt-1 active:bg-emerald-600"
+              className="flex-row items-center justify-center gap-2 bg-brand-500 rounded-2xl py-3 mt-1 active:bg-brand-600"
             >
               <Feather name="copy" size={14} color="#fff" />
               <Text className="text-xs font-bold text-white uppercase">

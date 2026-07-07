@@ -1,14 +1,15 @@
 import { CheckCircle2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
-import { TextInput } from '../../components/ui/input'
+import { Select, TextInput } from '../../components/ui/input'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
 import { useAuth, useVendor } from '../auth/auth-context'
+import { useStoreCategories } from './use-store-categories'
 import { useUpdateProfile } from './use-store-profile'
 
 // The locales a store name can be authored in. Backend name_i18n is an
@@ -25,18 +26,19 @@ export function StoreProfilePage() {
   const vendor = useVendor()
   const { setVendor } = useAuth()
   const updateProfile = useUpdateProfile()
+  const { data: storeCategories } = useStoreCategories()
   const [saved, setSaved] = useState(false)
 
   const [names, setNames] = useState<Record<string, string>>(() => ({
     en: vendor.name_i18n['en'] ?? '',
     ar: vendor.name_i18n['ar'] ?? '',
   }))
-  const [category, setCategory] = useState(vendor.category)
+  const [storeCategoryId, setStoreCategoryId] = useState(vendor.store_category_id ?? '')
   const [address, setAddress] = useState(vendor.address ?? '')
   const [timezone, setTimezone] = useState(vendor.timezone)
   const [displayCurrency, setDisplayCurrency] = useState(vendor.display_currency ?? '')
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = (e: SyntheticEvent) => {
     e.preventDefault()
     setSaved(false)
     const name_i18n = Object.fromEntries(
@@ -46,7 +48,7 @@ export function StoreProfilePage() {
       {
         vendorId: vendor.id,
         name_i18n,
-        category,
+        store_category_id: storeCategoryId || undefined,
         address,
         timezone,
         display_currency: displayCurrency || undefined,
@@ -91,7 +93,16 @@ export function StoreProfilePage() {
         <Card>
           <CardHeader title={t('profile.title')} />
           <CardBody className="grid gap-4 sm:grid-cols-2">
-            <TextInput label={t('profile.category')} value={category} onChange={(e) => { setCategory(e.target.value) }} />
+            <Select
+              label={t('profile.category')}
+              value={storeCategoryId}
+              onChange={(e) => { setStoreCategoryId(e.target.value) }}
+            >
+              <option value="">{t('profile.selectCategory')}</option>
+              {storeCategories?.map((sc) => (
+                <option key={sc.id} value={sc.id}>{sc.name_i18n.en ?? sc.slug}</option>
+              ))}
+            </Select>
             <TextInput label={t('profile.displayCurrency')} value={displayCurrency} onChange={(e) => { setDisplayCurrency(e.target.value.toUpperCase()) }} placeholder="USD" />
             <TextInput label={t('profile.timezone')} value={timezone} onChange={(e) => { setTimezone(e.target.value) }} />
             <TextInput label={t('profile.address')} value={address} onChange={(e) => { setAddress(e.target.value) }} />

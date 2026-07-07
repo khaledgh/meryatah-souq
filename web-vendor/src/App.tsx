@@ -9,6 +9,7 @@ import { AccountPage } from './features/account/account-page'
 import { AuthProvider } from './features/auth/auth-context'
 import { LoginPage } from './features/auth/login-page'
 import { CategoriesPage } from './features/categories/categories-page'
+import { CategoryRequestsPage } from './features/category-requests/category-requests-page'
 import { CouponsPage } from './features/coupons/coupons-page'
 import { DashboardPage } from './features/dashboard/dashboard-page'
 import { EarningsPage } from './features/earnings/earnings-page'
@@ -48,6 +49,7 @@ export default function App() {
                     <Route path="hours" element={<StoreHoursPage />} />
                     <Route path="scheduling" element={<SchedulingPage />} />
                     <Route path="categories" element={<CategoriesPage />} />
+                    <Route path="category-requests" element={<CategoryRequestsPage />} />
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="products/new" element={<ProductEditorPage />} />
                     <Route path="products/:productId" element={<ProductEditorPage />} />

@@ -179,6 +179,25 @@ func (s *VendorApplicationService) Approve(ctx context.Context, applicationID, r
 	vendorID := newUUID()
 	now := time.Now()
 
+	// Resolve the application's free-text category to an admin-managed
+	// store_categories row by slug (same lower/trim rule as the 000009
+	// backfill migration), falling back to "other" so approval never blocks
+	// on an unrecognized category value.
+	var storeCategoryID string
+	slugErr := s.db.WithContext(ctx).Raw(`
+		SELECT id FROM store_categories WHERE slug = lower(trim(?))
+	`, app.Category).Scan(&storeCategoryID).Error
+	if slugErr != nil {
+		return nil, apperror.Internal(fmt.Errorf("vendor_application: resolve store category: %w", slugErr))
+	}
+	if storeCategoryID == "" {
+		if fallbackErr := s.db.WithContext(ctx).Raw(`
+			SELECT id FROM store_categories WHERE slug = 'other'
+		`).Scan(&storeCategoryID).Error; fallbackErr != nil {
+			return nil, apperror.Internal(fmt.Errorf("vendor_application: resolve fallback store category: %w", fallbackErr))
+		}
+	}
+
 	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		user := models.User{
 			ID:            userID,
@@ -196,9 +215,9 @@ func (s *VendorApplicationService) Approve(ctx context.Context, applicationID, r
 		}
 
 		if err := tx.Exec(`
-			INSERT INTO vendors (id, owner_user_id, name_i18n, category, location, address, timezone, created_at)
-			VALUES (?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?, ?, ?)
-		`, vendorID, userID, app.BusinessNameI18n, app.Category, app.Longitude, app.Latitude,
+			INSERT INTO vendors (id, owner_user_id, name_i18n, category, store_category_id, location, address, timezone, created_at)
+			VALUES (?, ?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?, ?, ?)
+		`, vendorID, userID, app.BusinessNameI18n, app.Category, storeCategoryID, app.Longitude, app.Latitude,
 			app.Address, app.Timezone, now).Error; err != nil {
 			return fmt.Errorf("create vendor: %w", err)
 		}

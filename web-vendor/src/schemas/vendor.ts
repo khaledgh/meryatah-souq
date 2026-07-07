@@ -7,6 +7,7 @@ export const vendorSchema = z.object({
   owner_user_id: z.string(),
   name_i18n: nameI18nSchema,
   category: z.string(),
+  store_category_id: z.string().nullable().optional(),
   address: z.string().nullable().optional(),
   logo_url: z.string().nullable().optional(),
   timezone: z.string(),

@@ -73,7 +73,7 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
           return (
           <View
             style={{ width: CAROUSEL_WIDTH }}
-            className="mr-3 h-40 rounded-3xl overflow-hidden bg-emerald-50 dark:bg-emerald-950/20"
+            className="mr-3 h-40 rounded-3xl overflow-hidden bg-brand-50 dark:bg-brand-950/20"
           >
             {uri ? (
               <Image
@@ -102,7 +102,7 @@ export function Carousel({ data, autoPlay = true, interval = 3000 }: CarouselPro
             <View
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                activeIndex === i ? 'w-4 bg-emerald-600' : 'w-1.5 bg-gray-300 dark:bg-gray-700'
+                activeIndex === i ? 'w-4 bg-brand-600' : 'w-1.5 bg-gray-300 dark:bg-gray-700'
               }`}
             />
           ))}

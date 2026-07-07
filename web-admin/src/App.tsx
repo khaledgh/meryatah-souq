@@ -10,14 +10,17 @@ import { LoginPage } from './features/auth/login-page'
 import { useLocaleBootstrap } from './i18n/use-locale-bootstrap'
 import { AuditLogPage } from './features/audit-log/audit-log-page'
 import { BannerAdsPage } from './features/banner-ads/banner-ads-page'
+import { CategoryRequestsPage } from './features/category-requests/category-requests-page'
 import { CouponsPage } from './features/coupons/coupons-page'
 import { CurrenciesPage } from './features/currencies/currencies-page'
 import { DriversPage } from './features/drivers/drivers-page'
 import { LocalizationPage } from './features/localization/localization-page'
 import { OrdersPage } from './features/orders/orders-page'
 import { OverviewPage } from './features/overview/overview-page'
+import { ProductCategoriesPage } from './features/product-categories/product-categories-page'
 import { PushBroadcastPage } from './features/push-broadcast/push-broadcast-page'
 import { SettingsPage } from './features/settings/settings-page'
+import { StoreCategoriesPage } from './features/store-categories/store-categories-page'
 import { UsersPage } from './features/users/users-page'
 import { VendorApplicationsPage } from './features/vendor-applications/vendor-applications-page'
 import { VendorDetailPage } from './features/vendors/vendor-detail-page'
@@ -55,6 +58,9 @@ export default function App() {
                     <Route path="drivers" element={<DriversPage />} />
                     <Route path="users" element={<UsersPage />} />
                     <Route path="banner-ads" element={<BannerAdsPage />} />
+                    <Route path="store-categories" element={<StoreCategoriesPage />} />
+                    <Route path="product-categories" element={<ProductCategoriesPage />} />
+                    <Route path="category-requests" element={<CategoryRequestsPage />} />
                     <Route path="coupons" element={<CouponsPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="currencies" element={<CurrenciesPage />} />

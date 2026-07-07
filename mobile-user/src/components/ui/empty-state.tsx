@@ -20,8 +20,8 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center p-8 mt-10">
-      <View className="size-16 rounded-full bg-emerald-50 items-center justify-center mb-4 dark:bg-emerald-950/30">
-        <Feather name={icon} size={28} color="#059669" />
+      <View className="size-16 rounded-full bg-brand-50 items-center justify-center mb-4 dark:bg-brand-950/30">
+        <Feather name={icon} size={28} color="#d97706" />
       </View>
 
       <Text className="text-lg font-bold text-gray-900 dark:text-gray-100 text-center mb-1">

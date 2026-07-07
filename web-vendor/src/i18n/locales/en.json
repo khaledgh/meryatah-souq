@@ -9,6 +9,7 @@
     "storeHours": "Store Hours",
     "scheduling": "Scheduling",
     "categories": "Categories",
+    "categoryRequests": "Request a Category",
     "products": "Products",
     "orders": "Orders",
     "coupons": "Coupons",
@@ -71,6 +72,7 @@
     "storeNameHint": "Shown to customers in the active language.",
     "nameForLocale": "Name ({{locale}})",
     "category": "Category",
+    "selectCategory": "Select a category…",
     "address": "Address",
     "timezone": "Timezone",
     "displayCurrency": "Display currency",
@@ -126,6 +128,30 @@
     "nameEn": "Name (EN)",
     "nameAr": "Name (AR)",
     "confirmDelete": "Delete this category? Products in it will become uncategorized."
+  },
+  "categoryRequests": {
+    "title": "Request a Category",
+    "description": "You can only request a new store or product category — an admin reviews and creates it.",
+    "name": "Category",
+    "kind": "Type",
+    "kinds": {
+      "store": "Store category (marketplace section)",
+      "product": "Product category"
+    },
+    "nameEn": "Name (EN)",
+    "nameAr": "Name (AR)",
+    "notes": "Notes (optional)",
+    "submit": "Submit request",
+    "submitted": "Submitted",
+    "reason": "Admin note",
+    "empty": "No requests yet.",
+    "createTitle": "New request",
+    "createHint": "Explain what the category is for; an admin will review it.",
+    "statusValues": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   },
   "products": {
     "title": "Products",

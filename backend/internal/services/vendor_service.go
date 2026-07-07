@@ -25,18 +25,21 @@ func NewVendorService(db *gorm.DB) *VendorService {
 }
 
 type CreateVendorInput struct {
-	OwnerUserID string
-	NameI18n    json.RawMessage
-	Category    string
-	Longitude   float64
-	Latitude    float64
-	Address     string
-	Timezone    string
+	OwnerUserID     string
+	NameI18n        json.RawMessage
+	Category        string
+	StoreCategoryID *string
+	Longitude       float64
+	Latitude        float64
+	Address         string
+	Timezone        string
 }
 
 // Create inserts a new vendor. Only callable by super_admin (enforced by
 // route RBAC, not here) — vendor onboarding (§11.A5) creates the vendor +
-// owner user together; this is the vendor half.
+// owner user together; this is the vendor half. StoreCategoryID is the
+// admin-managed marketplace-section FK (blueprint marketplace taxonomy);
+// Category is kept in parallel only through the migration transition.
 func (s *VendorService) Create(ctx context.Context, in CreateVendorInput) (*models.Vendor, *apperror.AppError) {
 	if in.Category == "" {
 		return nil, apperror.Validation("category is required")
@@ -50,9 +53,9 @@ func (s *VendorService) Create(ctx context.Context, in CreateVendorInput) (*mode
 
 	id := newUUID()
 	err := s.db.WithContext(ctx).Exec(`
-		INSERT INTO vendors (id, owner_user_id, name_i18n, category, location, address, timezone, created_at)
-		VALUES (?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?, ?, ?)
-	`, id, in.OwnerUserID, in.NameI18n, in.Category, in.Longitude, in.Latitude, in.Address, in.Timezone, time.Now()).Error
+		INSERT INTO vendors (id, owner_user_id, name_i18n, category, store_category_id, location, address, timezone, created_at)
+		VALUES (?, ?, ?, ?, ?, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?, ?, ?)
+	`, id, in.OwnerUserID, in.NameI18n, in.Category, in.StoreCategoryID, in.Longitude, in.Latitude, in.Address, in.Timezone, time.Now()).Error
 	if err != nil {
 		return nil, apperror.Internal(fmt.Errorf("vendor: create: %w", err))
 	}
@@ -65,7 +68,7 @@ func (s *VendorService) Create(ctx context.Context, in CreateVendorInput) (*mode
 func (s *VendorService) GetByID(ctx context.Context, id string) (*models.Vendor, *apperror.AppError) {
 	var v models.Vendor
 	err := s.db.WithContext(ctx).Raw(`
-		SELECT id, owner_user_id, name_i18n, category, address, logo_url, timezone,
+		SELECT id, owner_user_id, name_i18n, category, store_category_id, address, logo_url, timezone,
 		       commission_pct, display_currency, scheduling_allowed, scheduling_enabled,
 		       scheduling_config, features, is_active, created_at,
 		       ST_X(location::geometry) AS longitude, ST_Y(location::geometry) AS latitude
@@ -89,7 +92,7 @@ func (s *VendorService) GetByID(ctx context.Context, id string) (*models.Vendor,
 func (s *VendorService) GetByOwner(ctx context.Context, ownerUserID string) (*models.Vendor, *apperror.AppError) {
 	var v models.Vendor
 	err := s.db.WithContext(ctx).Raw(`
-		SELECT id, owner_user_id, name_i18n, category, address, logo_url, timezone,
+		SELECT id, owner_user_id, name_i18n, category, store_category_id, address, logo_url, timezone,
 		       commission_pct, display_currency, scheduling_allowed, scheduling_enabled,
 		       scheduling_config, features, is_active, created_at,
 		       ST_X(location::geometry) AS longitude, ST_Y(location::geometry) AS latitude
@@ -130,6 +133,7 @@ func (s *VendorService) AssertOwnership(ctx context.Context, vendorID, callerUse
 type UpdateVendorInput struct {
 	NameI18n        *json.RawMessage
 	Category        *string
+	StoreCategoryID *string
 	Address         *string
 	LogoURL         *string
 	Timezone        *string
@@ -150,6 +154,9 @@ func (s *VendorService) Update(ctx context.Context, vendorID string, in UpdateVe
 	}
 	if in.Category != nil {
 		updates["category"] = *in.Category
+	}
+	if in.StoreCategoryID != nil {
+		updates["store_category_id"] = *in.StoreCategoryID
 	}
 	if in.Address != nil {
 		updates["address"] = *in.Address
@@ -244,8 +251,10 @@ func (s *VendorService) SetActive(ctx context.Context, vendorID string, active b
 
 // Nearby returns active vendors within radiusMeters of (lon, lat), nearest
 // first, using PostGIS's geography distance operator (blueprint §5, §11.C5
-// nearby-vendor lookup on the User App home screen).
-func (s *VendorService) Nearby(ctx context.Context, longitude, latitude float64, radiusMeters float64, limit int) ([]models.Vendor, *apperror.AppError) {
+// nearby-vendor lookup on the User App home screen). storeCategoryID
+// optionally restricts results to a single marketplace section (mobile
+// section-landing filter); nil/empty means no filter.
+func (s *VendorService) Nearby(ctx context.Context, longitude, latitude float64, radiusMeters float64, limit int, storeCategoryID *string) ([]models.Vendor, *apperror.AppError) {
 	if !validLongitude(longitude) || !validLatitude(latitude) {
 		return nil, apperror.Validation("invalid location coordinates")
 	}
@@ -256,20 +265,28 @@ func (s *VendorService) Nearby(ctx context.Context, longitude, latitude float64,
 		limit = 50
 	}
 
-	var vendors []models.Vendor
-	err := s.db.WithContext(ctx).Raw(`
-		SELECT id, owner_user_id, name_i18n, category, address, logo_url, timezone,
+	// Built conditionally (rather than a "?::uuid IS NULL OR ..." inline
+	// clause) to keep the same param-binding style as the rest of this
+	// service and avoid any ambiguity from binding a nil *string as ::uuid.
+	query := `
+		SELECT id, owner_user_id, name_i18n, category, store_category_id, address, logo_url, timezone,
 		       commission_pct, display_currency, scheduling_allowed, scheduling_enabled,
 		       scheduling_config, features, is_active, created_at,
 		       ST_X(location::geometry) AS longitude, ST_Y(location::geometry) AS latitude,
 		       ST_Distance(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) AS distance_meters
 		FROM vendors
 		WHERE is_active = true
-		  AND ST_DWithin(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)
-		ORDER BY distance_meters ASC
-		LIMIT ?
-	`, longitude, latitude, longitude, latitude, radiusMeters, limit).Scan(&vendors).Error
-	if err != nil {
+		  AND ST_DWithin(location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)`
+	args := []any{longitude, latitude, longitude, latitude, radiusMeters}
+	if storeCategoryID != nil && *storeCategoryID != "" {
+		query += ` AND store_category_id = ?`
+		args = append(args, *storeCategoryID)
+	}
+	query += ` ORDER BY distance_meters ASC LIMIT ?`
+	args = append(args, limit)
+
+	var vendors []models.Vendor
+	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&vendors).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("vendor: nearby search: %w", err))
 	}
 	return vendors, nil

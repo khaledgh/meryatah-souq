@@ -17,7 +17,7 @@ export default function OrdersScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#10b981" size="large" />
+          <ActivityIndicator color="#f59e0b" size="large" />
         </View>
       </SafeAreaView>
     )
@@ -32,7 +32,7 @@ export default function OrdersScreen() {
           </Text>
           <Pressable
             onPress={() => void refetch()}
-            className="rounded-xl bg-emerald-600 px-6 py-3 active:bg-emerald-700"
+            className="rounded-xl bg-brand-600 px-6 py-3 active:bg-brand-700"
           >
             <Text className="text-sm font-semibold text-white">{t('common.retry', 'Retry')}</Text>
           </Pressable>
@@ -103,12 +103,12 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
       className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
     >
       <View className={`size-12 items-center justify-center rounded-xl ${
-        isActive ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-gray-50 dark:bg-gray-800'
+        isActive ? 'bg-brand-50 dark:bg-brand-950/30' : 'bg-gray-50 dark:bg-gray-800'
       }`}>
         <Feather
           name={isActive ? 'truck' : 'check-square'}
           size={20}
-          color={isActive ? '#10b981' : '#9ca3af'}
+          color={isActive ? '#f59e0b' : '#9ca3af'}
         />
       </View>
 
@@ -127,10 +127,10 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
             ${order.subtotal_display.toFixed(2)} · {order.currency_code}
           </Text>
           <View className={`rounded-full px-2.5 py-0.5 ${
-            isActive ? 'bg-emerald-100 dark:bg-emerald-950/40' : 'bg-gray-100 dark:bg-gray-800'
+            isActive ? 'bg-brand-100 dark:bg-brand-950/40' : 'bg-gray-100 dark:bg-gray-800'
           }`}>
             <Text className={`text-[10px] font-bold ${
-              isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'
+              isActive ? 'text-brand-700 dark:text-brand-400' : 'text-gray-500 dark:text-gray-400'
             }`}>
               {statusLabelMap[order.status] || order.status}
             </Text>

@@ -17,6 +17,9 @@
     "pushBroadcast": "Push Broadcast",
     "auditLog": "Audit Log",
     "vendorApplications": "Vendor Onboarding",
+    "storeCategories": "Store Categories",
+    "productCategories": "Product Categories",
+    "categoryRequests": "Category Requests",
     "logout": "Log out",
     "groups": {
       "overview": "Overview",
@@ -59,7 +62,9 @@
     "status": "Status",
     "phoneVerified": "Phone verified",
     "resetLockout": "Reset lockout",
-    "vendorIdOptional": "Vendor ID (optional)"
+    "vendorIdOptional": "Vendor ID (optional)",
+    "sortOrder": "Sort order",
+    "none": "None"
   },
   "vendors": {
     "addVendor": "Add vendor",
@@ -236,5 +241,60 @@
     "reasonLabel": "Reason",
     "reasonPlaceholder": "Explain why this application is being rejected",
     "confirmReject": "Confirm reject"
+  },
+  "storeCategories": {
+    "title": "Store category",
+    "description": "The marketplace sections vendors belong to (Food, Electronics, Market, ...). Vendors can only request a new one — see Category Requests.",
+    "icon": "Icon",
+    "iconKeepHint": "Leave empty to keep the current icon.",
+    "slug": "Slug",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "templateKind": "Template",
+    "templateKinds": {
+      "food": "Food (menu-style list)",
+      "electronics": "Electronics (spec grid)",
+      "market": "Market (weight/unit grid)",
+      "generic": "Generic"
+    },
+    "accentColor": "Accent color",
+    "create": "Create category",
+    "createTitle": "Create store category",
+    "editTitle": "Edit store category"
+  },
+  "productCategories": {
+    "description": "The global product taxonomy (Drinks, Laptops, Leafy Greens, ...), with subcategories via a parent. Separate from each vendor's own menu sections.",
+    "icon": "Icon",
+    "iconKeepHint": "Leave empty to keep the current icon.",
+    "slug": "Slug",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "parent": "Parent category",
+    "topLevel": "Top-level (no parent)",
+    "create": "Create category",
+    "createTitle": "Create product category",
+    "editTitle": "Edit product category"
+  },
+  "categoryRequests": {
+    "title": "Category Requests",
+    "description": "Vendors can only request a new store or product category — review and approve or reject here.",
+    "name": "Category",
+    "vendor": "Vendor",
+    "notes": "Notes",
+    "kinds": {
+      "store": "Store category",
+      "product": "Product category"
+    },
+    "statusValues": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "emptyForStatus": {
+      "pending": "No pending requests.",
+      "approved": "No approved requests yet.",
+      "rejected": "No rejected requests."
+    },
+    "rejectTitle": "Reject request: {{name}}"
   }
 }

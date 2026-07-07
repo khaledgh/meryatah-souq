@@ -67,7 +67,7 @@ export default function CartScreen() {
               <Text className="text-sm font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
                 {item.name}
               </Text>
-              <Text className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+              <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400 mt-1">
                 ${item.priceUsd.toFixed(2)}
               </Text>
             </View>

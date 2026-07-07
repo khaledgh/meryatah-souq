@@ -182,9 +182,9 @@ export default function CheckoutScreen() {
             onChangeText={setAddress}
           />
           {/* GPS Coordinates Section */}
-          <View className="flex-row items-center justify-between bg-emerald-50/20 border border-emerald-100 rounded-2xl p-4 mt-1 dark:border-emerald-950 dark:bg-emerald-950/15">
+          <View className="flex-row items-center justify-between bg-brand-50/20 border border-brand-100 rounded-2xl p-4 mt-1 dark:border-brand-950 dark:bg-brand-950/15">
             <View className="flex-1 mr-4">
-              <Text className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+              <Text className="text-xs font-black text-brand-700 dark:text-brand-400 uppercase tracking-wider">
                 {t('checkout.gpsLocation', 'GPS Location')}
               </Text>
               <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1 font-semibold">
@@ -199,7 +199,7 @@ export default function CheckoutScreen() {
             <Pressable
               onPress={handleGetLocation}
               disabled={locationLoading}
-              className="bg-emerald-500 active:bg-emerald-600 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5"
+              className="bg-brand-500 active:bg-brand-600 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5"
             >
               {locationLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -227,12 +227,12 @@ export default function CheckoutScreen() {
                 onPress={() => setIsScheduled(false)}
                 className={`flex-1 flex-row items-center justify-center gap-2 border rounded-2xl py-4 active:bg-gray-50 ${
                   !isScheduled
-                    ? 'border-emerald-500 bg-emerald-50/20'
+                    ? 'border-brand-500 bg-brand-50/20'
                     : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
                 }`}
               >
-                <Feather name="clock" size={16} color={!isScheduled ? '#10b981' : '#6b7280'} />
-                <Text className={`font-semibold text-sm ${!isScheduled ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                <Feather name="clock" size={16} color={!isScheduled ? '#f59e0b' : '#6b7280'} />
+                <Text className={`font-semibold text-sm ${!isScheduled ? 'text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-400'}`}>
                   {t('checkout.asap', 'As soon as possible')}
                 </Text>
               </Pressable>
@@ -241,12 +241,12 @@ export default function CheckoutScreen() {
                 onPress={() => setIsScheduled(true)}
                 className={`flex-1 flex-row items-center justify-center gap-2 border rounded-2xl py-4 active:bg-gray-50 ${
                   isScheduled
-                    ? 'border-emerald-500 bg-emerald-50/20'
+                    ? 'border-brand-500 bg-brand-50/20'
                     : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
                 }`}
               >
-                <Feather name="calendar" size={16} color={isScheduled ? '#10b981' : '#6b7280'} />
-                <Text className={`font-semibold text-sm ${isScheduled ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                <Feather name="calendar" size={16} color={isScheduled ? '#f59e0b' : '#6b7280'} />
+                <Text className={`font-semibold text-sm ${isScheduled ? 'text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-400'}`}>
                   {t('checkout.schedule', 'Schedule for later')}
                 </Text>
               </Pressable>
@@ -258,7 +258,7 @@ export default function CheckoutScreen() {
                   {t('checkout.selectSlot', 'Available Time Slots')}
                 </Text>
                 {slotsQuery.isLoading ? (
-                  <ActivityIndicator color="#10b981" />
+                  <ActivityIndicator color="#f59e0b" />
                 ) : slotsQuery.data && slotsQuery.data.length > 0 ? (
                   <View className="gap-2">
                     {slotsQuery.data.slice(0, 5).map((slot) => {
@@ -272,14 +272,14 @@ export default function CheckoutScreen() {
                           onPress={() => setSelectedSlot(slot.start_at)}
                           className={`flex-row items-center justify-between border rounded-xl px-4 py-3 active:bg-gray-50 ${
                             isSelected
-                              ? 'border-emerald-500 bg-emerald-50/10'
+                              ? 'border-brand-500 bg-brand-50/10'
                               : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
                           }`}
                         >
-                          <Text className={`text-xs font-semibold ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <Text className={`text-xs font-semibold ${isSelected ? 'text-brand-700 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>
                             {timeStr}
                           </Text>
-                          {isSelected && <Feather name="check" size={16} color="#10b981" />}
+                          {isSelected && <Feather name="check" size={16} color="#f59e0b" />}
                         </Pressable>
                       )
                     })}
@@ -308,11 +308,11 @@ export default function CheckoutScreen() {
                   onPress={() => setSelectedCurrency(code)}
                   className={`flex-1 items-center justify-center border rounded-2xl py-3 active:bg-gray-50 ${
                     isSelected
-                      ? 'border-emerald-500 bg-emerald-50/20'
+                      ? 'border-brand-500 bg-brand-50/20'
                       : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'
                   }`}
                 >
-                  <Text className={`font-bold text-sm ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <Text className={`font-bold text-sm ${isSelected ? 'text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-400'}`}>
                     {code}
                   </Text>
                 </Pressable>
@@ -358,7 +358,7 @@ export default function CheckoutScreen() {
               {t('checkout.total', 'Total')}
             </Text>
             <View className="items-end">
-              <Text className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+              <Text className="text-lg font-black text-brand-600 dark:text-brand-400">
                 ${subtotal.toFixed(2)}
               </Text>
               {selectedCurrency === 'LBP' && (

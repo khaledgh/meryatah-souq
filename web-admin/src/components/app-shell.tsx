@@ -3,6 +3,7 @@ import {
   Gauge,
   Globe2,
   LayoutDashboard,
+  Layers,
   ListChecks,
   LogOut,
   Megaphone,
@@ -45,6 +46,9 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/vendors', labelKey: 'nav.vendors', icon: LayoutDashboard },
       { to: '/vendor-applications', labelKey: 'nav.vendorApplications', icon: ClipboardCheck },
+      { to: '/store-categories', labelKey: 'nav.storeCategories', icon: Layers },
+      { to: '/product-categories', labelKey: 'nav.productCategories', icon: Layers },
+      { to: '/category-requests', labelKey: 'nav.categoryRequests', icon: ClipboardCheck },
       { to: '/drivers', labelKey: 'nav.drivers', icon: Truck },
       { to: '/users', labelKey: 'nav.users', icon: Users },
       { to: '/orders', labelKey: 'nav.orders', icon: ReceiptText },

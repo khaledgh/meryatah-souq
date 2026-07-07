@@ -28,7 +28,7 @@ export function Button({ label, variant = 'primary', isLoading = false, disabled
       {...props}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#ffffff' : '#9333ea'} />
+        <ActivityIndicator color={variant === 'primary' ? '#ffffff' : '#d97706'} />
       ) : (
         <Text className={`text-base font-semibold ${labelClasses[variant]}`}>{label}</Text>
       )}

@@ -69,8 +69,8 @@ export default function ProfileScreen() {
 
       {/* User Information */}
       <View className="px-5 py-6 items-center border-b border-gray-50 dark:border-gray-800/50">
-        <View className="size-20 rounded-full bg-emerald-50 items-center justify-center mb-3 dark:bg-emerald-950/30">
-          <Feather name="user" size={36} color="#10b981" />
+        <View className="size-20 rounded-full bg-brand-50 items-center justify-center mb-3 dark:bg-brand-950/30">
+          <Feather name="user" size={36} color="#f59e0b" />
         </View>
         
         {isGuest ? (
@@ -82,7 +82,7 @@ export default function ProfileScreen() {
               onPress={() => router.replace('/(auth)/phone')}
               className="mt-1"
             >
-              <Text className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+              <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">
                 {t('profile.signInNow', 'Sign in or create account')}
               </Text>
             </Pressable>
@@ -108,14 +108,14 @@ export default function ProfileScreen() {
           className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
         >
           <View className="flex-row items-center gap-3">
-            <View className="size-10 rounded-xl bg-emerald-50 items-center justify-center dark:bg-emerald-950/30">
-              <Feather name="globe" size={20} color="#10b981" />
+            <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
+              <Feather name="globe" size={20} color="#f59e0b" />
             </View>
             <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               {t('profile.language', 'App Language')}
             </Text>
           </View>
-          <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+          <Text className="text-sm font-bold text-brand-600 dark:text-brand-400">
             {i18n.language === 'ar' ? 'العربية' : 'English'}
           </Text>
         </Pressable>
@@ -126,8 +126,8 @@ export default function ProfileScreen() {
           className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
         >
           <View className="flex-row items-center gap-3">
-            <View className="size-10 rounded-xl bg-emerald-50 items-center justify-center dark:bg-emerald-950/30">
-              <Feather name="tag" size={20} color="#10b981" />
+            <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
+              <Feather name="tag" size={20} color="#f59e0b" />
             </View>
             <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
               {t('profile.coupons', 'Coupons & Offers')}
@@ -143,8 +143,8 @@ export default function ProfileScreen() {
             className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
           >
             <View className="flex-row items-center gap-3">
-              <View className="size-10 rounded-xl bg-emerald-50 items-center justify-center dark:bg-emerald-950/30">
-                <Feather name="map-pin" size={20} color="#10b981" />
+              <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
+                <Feather name="map-pin" size={20} color="#f59e0b" />
               </View>
               <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
                 {t('profile.savedAddresses', 'Saved Addresses')}

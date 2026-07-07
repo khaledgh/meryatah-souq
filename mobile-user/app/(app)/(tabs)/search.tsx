@@ -59,8 +59,8 @@ export default function SearchScreen() {
               onPress={() => router.push({ pathname: '/vendor/[id]', params: { id: item.id } })}
               className="flex-row items-center gap-3 border-b border-gray-100 py-4 dark:border-gray-800"
             >
-              <View className="size-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
-                <Text className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              <View className="size-12 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-950/30">
+                <Text className="text-lg font-bold text-brand-600 dark:text-brand-400">
                   {vendorDisplayName(item, i18n.language).charAt(0).toUpperCase()}
                 </Text>
               </View>

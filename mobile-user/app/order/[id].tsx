@@ -121,7 +121,7 @@ export default function OrderTrackingScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-gray-950 justify-center items-center">
-        <ActivityIndicator color="#10b981" size="large" />
+        <ActivityIndicator color="#f59e0b" size="large" />
       </SafeAreaView>
     )
   }
@@ -209,9 +209,9 @@ export default function OrderTrackingScreen() {
           </View>
         ) : (
           /* Static status card when not on the way */
-          <View className="p-5 bg-emerald-50/20 border-b border-gray-100 dark:border-gray-900 dark:bg-emerald-950/10 items-center py-8">
-            <View className="size-16 rounded-full bg-emerald-50 items-center justify-center mb-3 dark:bg-emerald-950/30">
-              <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#10b981'} />
+          <View className="p-5 bg-brand-50/20 border-b border-gray-100 dark:border-gray-900 dark:bg-brand-950/10 items-center py-8">
+            <View className="size-16 rounded-full bg-brand-50 items-center justify-center mb-3 dark:bg-brand-950/30">
+              <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#f59e0b'} />
             </View>
             <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {isCancelled ? t('orders.statusCancelledMsg', 'Order Cancelled') : steps[currentStep]?.label}
@@ -238,7 +238,7 @@ export default function OrderTrackingScreen() {
                     {index < steps.length - 1 && (
                       <View
                         className={`absolute left-2.5 top-6 bottom-[-24px] w-[2px] ${
-                          index < currentStep ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-gray-800'
+                          index < currentStep ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'
                         }`}
                       />
                     )}
@@ -247,9 +247,9 @@ export default function OrderTrackingScreen() {
                     <View
                       className={`size-6 rounded-full items-center justify-center z-10 ${
                         isCurrent
-                          ? 'bg-emerald-500 border-4 border-emerald-100 dark:border-emerald-950'
+                          ? 'bg-brand-500 border-4 border-brand-100 dark:border-brand-950'
                           : isPassed
-                          ? 'bg-emerald-500'
+                          ? 'bg-brand-500'
                           : 'bg-gray-100 dark:bg-gray-800'
                       }`}
                     >
@@ -263,7 +263,7 @@ export default function OrderTrackingScreen() {
                       <Text
                         className={`text-sm font-bold ${
                           isCurrent
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-brand-600 dark:text-brand-400'
                             : isPassed
                             ? 'text-gray-900 dark:text-gray-100'
                             : 'text-gray-400'
@@ -313,7 +313,7 @@ export default function OrderTrackingScreen() {
               {t('orders.totalPaid', 'Total')}
             </Text>
             <View className="items-end">
-              <Text className="text-base font-black text-emerald-600 dark:text-emerald-400">
+              <Text className="text-base font-black text-brand-600 dark:text-brand-400">
                 ${order.subtotal_display.toFixed(2)} {order.currency_code}
               </Text>
               {order.exchange_rate > 1 && (

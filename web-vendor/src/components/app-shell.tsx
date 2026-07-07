@@ -2,6 +2,7 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardList,
+  FolderPlus,
   LayoutGrid,
   LogOut,
   Package,
@@ -48,6 +49,7 @@ const navGroups: NavGroup[] = [
     labelKey: 'nav.groups.catalog',
     items: [
       { to: '/categories', labelKey: 'nav.categories', icon: LayoutGrid },
+      { to: '/category-requests', labelKey: 'nav.categoryRequests', icon: FolderPlus },
       { to: '/products', labelKey: 'nav.products', icon: Package },
     ],
   },

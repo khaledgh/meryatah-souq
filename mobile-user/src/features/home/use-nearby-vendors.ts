@@ -15,13 +15,21 @@ export interface VendorWithStatus extends Vendor {
 // Fetches nearby active vendors (PostGIS) and each one's live Open/Closed
 // status. The status calls run in parallel; a failed status resolves to null
 // so one vendor's error never blanks the whole list (blueprint §11.C5:
-// closed stores stay visible, ordering is gated elsewhere).
-export function useNearbyVendors(coords: Coordinates) {
+// closed stores stay visible, ordering is gated elsewhere). storeCategoryId
+// optionally restricts results to one marketplace section server-side (the
+// section-landing screen), replacing the old client-only category filter.
+export function useNearbyVendors(coords: Coordinates, storeCategoryId?: string) {
   return useQuery({
-    queryKey: ['nearby-vendors', coords.longitude, coords.latitude],
+    queryKey: ['nearby-vendors', coords.longitude, coords.latitude, storeCategoryId],
     queryFn: async (): Promise<VendorWithStatus[]> => {
       const response = await apiClient.get('/vendors/nearby', {
-        params: { lon: coords.longitude, lat: coords.latitude, radius_m: 20000, limit: 50 },
+        params: {
+          lon: coords.longitude,
+          lat: coords.latitude,
+          radius_m: 20000,
+          limit: 50,
+          store_category_id: storeCategoryId,
+        },
       })
       const vendors = vendorListSchema.parse(response.data).data ?? []
 

@@ -7,6 +7,7 @@ export interface UpdateProfileInput {
   vendorId: string
   name_i18n?: Record<string, string>
   category?: string
+  store_category_id?: string
   address?: string
   timezone?: string
   display_currency?: string

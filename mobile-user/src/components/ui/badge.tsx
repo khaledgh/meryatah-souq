@@ -14,7 +14,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   error: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400 border border-red-200/50 dark:border-red-800/30',
   info: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/30',
   neutral: 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50',
-  brand: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/30',
+  brand: 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-400 border border-brand-200/50 dark:border-brand-800/30',
 }
 
 export function Badge({ children, variant = 'neutral', className = '' }: BadgeProps) {

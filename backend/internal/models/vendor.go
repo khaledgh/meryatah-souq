@@ -10,10 +10,15 @@ import (
 // service layer (ST_MakePoint/ST_X/ST_Y) rather than as a mapped struct
 // field — see services/vendor_service.go.
 type Vendor struct {
-	ID                string          `gorm:"column:id;primaryKey" json:"id"`
-	OwnerUserID       string          `gorm:"column:owner_user_id;not null" json:"owner_user_id"`
-	NameI18n          json.RawMessage `gorm:"column:name_i18n;type:jsonb;not null" json:"name_i18n"`
+	ID          string          `gorm:"column:id;primaryKey" json:"id"`
+	OwnerUserID string          `gorm:"column:owner_user_id;not null" json:"owner_user_id"`
+	NameI18n    json.RawMessage `gorm:"column:name_i18n;type:jsonb;not null" json:"name_i18n"`
+	// Category is the legacy free-text section label, kept only through the
+	// store_categories migration transition — new code should read/write
+	// StoreCategoryID instead. Drop this column in a later migration once
+	// every read path (web-admin, web-vendor, mobile) is cut over.
 	Category          string          `gorm:"column:category;not null" json:"category"`
+	StoreCategoryID   *string         `gorm:"column:store_category_id" json:"store_category_id,omitempty"`
 	Address           *string         `gorm:"column:address" json:"address,omitempty"`
 	LogoURL           *string         `gorm:"column:logo_url" json:"logo_url,omitempty"`
 	Timezone          string          `gorm:"column:timezone;not null" json:"timezone"`

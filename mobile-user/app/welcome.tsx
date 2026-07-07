@@ -101,7 +101,7 @@ export default function WelcomeScreen() {
         )}
         renderItem={({ item }) => (
           <View style={{ width: SCREEN_WIDTH }} className="items-center justify-center p-8 flex-1">
-            <View className="size-48 bg-emerald-50 rounded-full items-center justify-center mb-8 dark:bg-emerald-950/20">
+            <View className="size-48 bg-brand-50 rounded-full items-center justify-center mb-8 dark:bg-brand-950/20">
               <Image source={item.image} className="w-32 h-32 opacity-80" resizeMode="contain" />
             </View>
             <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-3">
@@ -123,7 +123,7 @@ export default function WelcomeScreen() {
             <View
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                activeIndex === i ? 'w-5 bg-emerald-500' : 'w-1.5 bg-gray-200 dark:bg-gray-800'
+                activeIndex === i ? 'w-5 bg-brand-500' : 'w-1.5 bg-gray-200 dark:bg-gray-800'
               }`}
             />
           ))}

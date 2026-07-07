@@ -9,9 +9,11 @@ import { Button } from '../../src/components/ui/button'
 import { QuantityStepper } from '../../src/components/ui/quantity-stepper'
 import { resolveMediaUrl } from '../../src/lib/media'
 import { useCart } from '../../src/features/cart/cart-context'
+import { useStoreCategories } from '../../src/features/home/use-store-categories'
 import { useProduct, useVendor } from '../../src/features/vendor/use-vendor'
 import { vendorDisplayName } from '../../src/schemas/vendor'
 import { productDisplayName, productDisplayDescription } from '../../src/schemas/product'
+import { templateStyleFor } from '../../src/theme/template-kinds'
 
 export default function ProductDetailScreen() {
   const { id: productId } = useLocalSearchParams<{ id: string }>()
@@ -24,6 +26,9 @@ export default function ProductDetailScreen() {
   const productQuery = useProduct(productId)
   // Fetch vendor once product is loaded to get vendor name
   const vendorQuery = useVendor(productQuery.data?.vendor_id)
+  const storeCategories = useStoreCategories()
+  const storeCategory = storeCategories.data?.find((c) => c.id === vendorQuery.data?.store_category_id)
+  const accentColor = storeCategory?.accent_color ?? templateStyleFor(storeCategory?.template_kind).accentColor
 
   const isLoading = productQuery.isLoading || (productQuery.data && vendorQuery.isLoading)
   const isError = productQuery.isError || vendorQuery.isError
@@ -31,7 +36,7 @@ export default function ProductDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-gray-950 justify-center items-center">
-        <ActivityIndicator color="#10b981" size="large" />
+        <ActivityIndicator color={accentColor} size="large" />
       </SafeAreaView>
     )
   }
@@ -115,7 +120,7 @@ export default function ProductDetailScreen() {
             <View className="p-5 gap-4">
               <View>
                 {vendor && (
-                  <Text className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                  <Text className="text-xs font-bold mb-1" style={{ color: accentColor }}>
                     {vendorDisplayName(vendor, i18n.language)}
                   </Text>
                 )}
@@ -125,7 +130,7 @@ export default function ProductDetailScreen() {
               </View>
 
               <View className="flex-row items-center justify-between">
-                <Text className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                <Text className="text-2xl font-black" style={{ color: accentColor }}>
                   ${product.price_usd.toFixed(2)}
                 </Text>
                 
