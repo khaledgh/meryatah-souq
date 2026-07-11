@@ -12,7 +12,19 @@
     "back": "رجوع",
     "ok": "موافق",
     "skip": "تخطي",
-    "next": "التالي"
+    "next": "التالي",
+    "minutesShort_zero": "{{count}} د",
+    "hoursShort_zero": "{{count}} س",
+    "minutesShort_one": "{{count}} د",
+    "hoursShort_one": "{{count}} س",
+    "minutesShort_two": "{{count}} د",
+    "hoursShort_two": "{{count}} س",
+    "minutesShort_few": "{{count}} د",
+    "hoursShort_few": "{{count}} س",
+    "minutesShort_many": "{{count}} د",
+    "hoursShort_many": "{{count}} س",
+    "minutesShort_other": "{{count}} د",
+    "hoursShort_other": "{{count}} س"
   },
   "language": {
     "title": "اختر لغتك",

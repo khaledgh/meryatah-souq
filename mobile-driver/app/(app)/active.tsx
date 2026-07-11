@@ -13,8 +13,8 @@ import { MapView } from '../../src/components/map/map-view'
 import { useAvailability } from '../../src/features/driver/availability-context'
 import { useActiveOrder } from '../../src/features/driver/use-active-order'
 import { useUpdateOrderStatus } from '../../src/features/driver/use-update-order-status'
-import { startBackgroundTracking, stopBackgroundTracking } from '../../src/features/tracking/location-task'
-import { formatEta, useRoute } from '../../src/features/tracking/use-route'
+import { hasBackgroundPermission } from '../../src/features/tracking/location-task'
+import { useFormatEta, useRoute } from '../../src/features/tracking/use-route'
 import { toApiError } from '../../src/lib/api-client'
 
 // D4 Active Order (blueprint §11.D4): the pickup→dropoff map, the status
@@ -28,6 +28,7 @@ export default function ActiveOrderScreen() {
   const [actionError, setActionError] = useState<string | null>(null)
   const { location: driverLocation } = useAvailability()
   const cameraRef = useRef<CameraRef>(null)
+  const formatEta = useFormatEta()
 
   const isOnTheWay = order?.status === 'on_the_way'
   const hasVendorCoords = order?.vendor_longitude != null && order?.vendor_latitude != null
@@ -42,29 +43,21 @@ export default function ActiveOrderScreen() {
   const routeTo = isOnTheWay ? dropoff : pickup
   const { data: route } = useRoute(routeFrom, routeTo)
 
-  // Report position in the background for the whole delivery leg. This is
-  // what keeps the customer's map alive when the driver locks their screen or
-  // switches apps — the in-app socket used to die there, freezing the marker.
+  // Background location reporting is owned app-wide by TrackingController
+  // (mounted in the root layout), NOT here: the task must outlive this screen
+  // so the customer keeps seeing the driver move when the app is backgrounded,
+  // and it must stop even when this screen isn't mounted (e.g. the vendor
+  // cancels mid-delivery). All this screen does is surface a denied
+  // permission, since this is where the driver has the context to grant it.
   useEffect(() => {
-    if (!isOnTheWay) {
-      void stopBackgroundTracking()
-      return
-    }
+    if (!isOnTheWay) return
     void (async () => {
-      const started = await startBackgroundTracking()
-      if (!started) {
+      const granted = await hasBackgroundPermission()
+      if (!granted) {
         setActionError(t('activeOrder.backgroundPermissionDenied'))
       }
     })()
   }, [isOnTheWay, t])
-
-  // Stop reporting if this screen goes away with no delivery in flight (e.g.
-  // logout) — never leave a location task running with nothing to report to.
-  useEffect(() => {
-    return () => {
-      void stopBackgroundTracking()
-    }
-  }, [])
 
   // Keep every relevant point in view: the driver, the store, the customer.
   useEffect(() => {
@@ -131,7 +124,11 @@ export default function ActiveOrderScreen() {
             { orderId: order.id, status: 'delivered' },
             {
               onSuccess: () => {
-                void stopBackgroundTracking()
+                // Refresh the active order immediately: TrackingController
+                // watches it and will stop background reporting as soon as
+                // the status is no longer on_the_way, rather than waiting out
+                // the poll interval.
+                void queryClient.invalidateQueries({ queryKey: ['driver-active-order'] })
                 void queryClient.invalidateQueries({ queryKey: ['driver-available-orders'] })
               },
               onError: (err) => { setActionError(toApiError(err).user_message) },

@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { apiClient } from '../../lib/api-client'
+import { apiClient, refreshSession } from '../../lib/api-client'
 import { clearSession, getGuestMode, getRefreshToken, setAccessToken, setGuestMode, setRefreshToken } from '../../lib/auth-storage'
-import { authResponseSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
+import { authResponseSchema, authUserSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
 
 // The result of verifying an OTP: either the user is now logged in, the
 // phone is new and registration must be completed with verificationToken,
@@ -48,32 +48,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // AND returns the full user payload, so this one call re-establishes
   // everything. Without it the app would bounce every returning user to the
   // OTP screen despite holding a perfectly valid credential.
+  // Goes through refreshSession() rather than posting directly: the refresh
+  // token is single-use, and a concurrent refresh from api-client's 401
+  // interceptor (a screen's first request racing this one on a deep link)
+  // would look like token theft to the backend and revoke EVERY session the
+  // user has. refreshSession() holds the one mutex that prevents that.
   useEffect(() => {
     void (async () => {
       try {
-        const refreshToken = await getRefreshToken()
-        if (!refreshToken) {
+        const refreshed = await refreshSession()
+        if (!refreshed) {
           setIsGuest(await getGuestMode())
           return
         }
-        const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
-        const parsed = authResponseSchema.parse(response.data)
-        if (parsed.user.role !== 'user') {
+        const parsed = authUserSchema.safeParse(refreshed.user)
+        if (!parsed.success || parsed.data.role !== 'user') {
           // Same guard as verifyOtp: a driver/vendor phone must not hold a
           // session here — every /user/* call would 403.
           await clearSession()
+          setIsGuest(await getGuestMode())
           return
         }
-        setAccessToken(parsed.access_token)
-        await setRefreshToken(parsed.refresh_token)
         await setGuestMode(false)
         setIsGuest(false)
-        setUser(parsed.user)
-      } catch {
-        // Expired/revoked/reused refresh token — drop it and fall back to
-        // whatever guest state was stored.
-        await clearSession()
-        setIsGuest(await getGuestMode())
+        setUser(parsed.data)
       } finally {
         setIsInitializing(false)
       }

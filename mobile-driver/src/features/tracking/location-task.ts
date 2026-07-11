@@ -89,10 +89,18 @@ export async function startBackgroundTracking(): Promise<boolean> {
   return true
 }
 
-// stopBackgroundTracking ends location reporting — called when a delivery is
-// completed or the driver goes offline. Safe to call when not running.
+// stopBackgroundTracking ends location reporting — called when a delivery
+// ends, the driver goes offline, or they log out. Safe to call when not
+// running.
 export async function stopBackgroundTracking(): Promise<void> {
   if (await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK)) {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK)
   }
+}
+
+// hasBackgroundPermission reports whether tracking CAN run, without prompting
+// — used to show the driver why their location isn't being shared.
+export async function hasBackgroundPermission(): Promise<boolean> {
+  const { status } = await Location.getBackgroundPermissionsAsync()
+  return status === 'granted'
 }

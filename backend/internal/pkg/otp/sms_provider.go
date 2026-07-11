@@ -65,6 +65,13 @@ type upsilonResponse struct {
 // undiagnosable before this — always leaves a row behind.
 func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) (err error) {
 	message := fmt.Sprintf("Your Meryata Souq verification code is %s", code)
+	// What gets AUDITED is the message with the code redacted. The audit trail
+	// exists to answer "was an SMS dispatched, and what did the gateway say" —
+	// it never needs the code itself, and persisting live codes in a
+	// phone-indexed table that outlives their 5-minute TTL would hand anyone
+	// with database read access a permanent phone -> OTP history (blueprint
+	// §5.10: no secret in logs).
+	auditMessage := redactCode(message, code)
 	var gatewayResponse string
 
 	defer func() {
@@ -75,7 +82,8 @@ func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) (err err
 		if err != nil {
 			sendErr = err.Error()
 		}
-		p.logger.LogSMS(ctx, phoneE164, p.Name(), message, err == nil, gatewayResponse, sendErr)
+		// The gateway's reply can echo the submitted text, so redact it too.
+		p.logger.LogSMS(ctx, phoneE164, p.Name(), auditMessage, err == nil, redactCode(gatewayResponse, code), sendErr)
 	}()
 
 	if p.username == "" || p.password == "" {
@@ -136,6 +144,16 @@ func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) (err err
 		}
 	}
 	return nil
+}
+
+// redactCode removes a live OTP code from text bound for the audit trail.
+// Empty code is a no-op guard so a bug elsewhere can't cause every character
+// to be masked.
+func redactCode(text, code string) string {
+	if text == "" || code == "" {
+		return text
+	}
+	return strings.ReplaceAll(text, code, "******")
 }
 
 // toUpsilonMSISDN converts an E.164 number (e.g. "+9613123456") to the bare

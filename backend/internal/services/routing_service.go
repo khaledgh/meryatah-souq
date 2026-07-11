@@ -67,7 +67,12 @@ type osrmResponse struct {
 // Route returns the driving route between two points. Coordinates are
 // validated by the caller (handler); this method assumes they're in range.
 func (s *RoutingService) Route(ctx context.Context, fromLon, fromLat, toLon, toLat float64) (*Route, *apperror.AppError) {
-	cacheKey := fmt.Sprintf("%s%.5f,%.5f;%.5f,%.5f", routeCachePrefix, fromLon, fromLat, toLon, toLat)
+	// Round the key to ~100 m (3 dp). At full precision a moving driver mints a
+	// brand-new key on every GPS fix, so the cache would never hit and would
+	// instead accumulate thousands of single-use entries per delivery. Rounding
+	// makes consecutive fixes along a road share an entry; the route between
+	// two points 100 m apart is the same road anyway.
+	cacheKey := fmt.Sprintf("%s%.3f,%.3f;%.3f,%.3f", routeCachePrefix, fromLon, fromLat, toLon, toLat)
 	if cached, err := s.redis.Get(ctx, cacheKey).Bytes(); err == nil {
 		var route Route
 		if json.Unmarshal(cached, &route) == nil {

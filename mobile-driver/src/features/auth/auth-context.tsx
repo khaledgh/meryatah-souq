@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { apiClient } from '../../lib/api-client'
+import { apiClient, refreshSession } from '../../lib/api-client'
 import { clearSession, getRefreshToken, setAccessToken, setRefreshToken } from '../../lib/auth-storage'
-import { authResponseSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
+import { authUserSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
+import { stopBackgroundTracking } from '../tracking/location-task'
 
 // The result of verifying an OTP. Both non-login outcomes are dead ends for
 // this app (see app/(auth)/otp.tsx):
@@ -36,30 +37,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore the session on cold start. The access token is memory-only
   // (§5.1) and so is always gone after a restart, but the refresh token
   // persists in the OS keychain — /auth/refresh trades it for a fresh pair
-  // AND returns the full user payload, so this one call re-establishes
-  // everything. Without it the app would bounce every returning driver to
-  // the OTP screen despite holding a perfectly valid credential.
+  // AND returns the full user payload, so this re-establishes everything.
+  // Without it the app would bounce every returning driver to the OTP screen
+  // despite holding a perfectly valid credential.
+  //
+  // Goes through refreshSession() rather than posting directly: the refresh
+  // token is single-use, and a concurrent refresh from api-client's 401
+  // interceptor (a screen's first request racing this one on a deep link)
+  // would look like token theft to the backend and revoke EVERY session the
+  // driver has. refreshSession() holds the one mutex that prevents that.
   useEffect(() => {
     void (async () => {
-      const refreshToken = await getRefreshToken()
-      if (!refreshToken) {
-        setIsInitializing(false)
-        return
-      }
       try {
-        const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
-        const parsed = authResponseSchema.parse(response.data)
+        const refreshed = await refreshSession()
+        if (!refreshed) return
+
+        const parsed = authUserSchema.safeParse(refreshed.user)
         // Same guard as verifyOtp: never hold a session for a non-driver.
-        if (parsed.user.role !== 'driver') {
+        if (!parsed.success || parsed.data.role !== 'driver') {
           await clearSession()
           return
         }
-        setAccessToken(parsed.access_token)
-        await setRefreshToken(parsed.refresh_token)
-        setUser(parsed.user)
-      } catch {
-        // Expired/revoked/reused refresh token — drop it and start clean.
-        await clearSession()
+        setUser(parsed.data)
       } finally {
         setIsInitializing(false)
       }
@@ -91,6 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    // The background location task deliberately outlives the Active Order
+    // screen (that's what keeps the customer's map alive while the driver has
+    // the app backgrounded), so logging out is the one place that must
+    // explicitly end it — otherwise it would keep reporting for a session
+    // that no longer exists.
+    await stopBackgroundTracking()
+
     // Revoke server-side first: clearing only local storage would leave the
     // refresh token valid for its full (now year-long) TTL, so a leaked copy
     // would outlive the "logout" entirely. Best-effort — a failed call must

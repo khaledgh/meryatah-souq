@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -361,14 +362,20 @@ func (s *OrderService) ListAvailableForDrivers(ctx context.Context, driverID str
 }
 
 // driverPosition reads a driver's last known position from driver_locations.
-// found=false simply means they've never reported one.
+// found=false means they've never reported one — distinguished from a real
+// query failure, which is returned as an error. Conflating the two would make
+// a broken database silently fall back to the unfiltered, nationwide order
+// list: exactly the thing the radius filter exists to prevent, failing open.
 func (s *OrderService) driverPosition(ctx context.Context, driverID string) (lon, lat, heading float64, found bool, appErr *apperror.AppError) {
 	row := s.db.WithContext(ctx).Raw(`
 		SELECT ST_X(location::geometry), ST_Y(location::geometry), COALESCE(heading, 0)
 		FROM driver_locations WHERE driver_id = ?
 	`, driverID).Row()
 	if err := row.Scan(&lon, &lat, &heading); err != nil {
-		return 0, 0, 0, false, nil
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, 0, false, nil
+		}
+		return 0, 0, 0, false, apperror.Internal(fmt.Errorf("order: driver position: %w", err))
 	}
 	return lon, lat, heading, true, nil
 }

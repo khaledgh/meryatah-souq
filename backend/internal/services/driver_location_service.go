@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -33,18 +35,23 @@ func (s *DriverLocationService) Upsert(ctx context.Context, driverID string, lon
 	return nil
 }
 
-// GetCurrent returns a driver's last known position, or ok=false if none
-// has ever been recorded.
+// GetCurrent returns a driver's last known position, or ok=false if none has
+// ever been recorded. A real query failure is returned as an error rather
+// than reported as ok=false — otherwise a broken database would be
+// indistinguishable from "this driver has never sent a position", and the
+// tracking map would quietly show nothing instead of surfacing the fault.
 func (s *DriverLocationService) GetCurrent(ctx context.Context, driverID string) (longitude, latitude, heading float64, ok bool, appErr *apperror.AppError) {
-	var found bool
 	row := s.db.WithContext(ctx).Raw(`
 		SELECT ST_X(location::geometry), ST_Y(location::geometry), COALESCE(heading, 0)
 		FROM driver_locations WHERE driver_id = ?
 	`, driverID).Row()
-	if err := row.Scan(&longitude, &latitude, &heading); err == nil {
-		found = true
+	if err := row.Scan(&longitude, &latitude, &heading); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, 0, false, nil
+		}
+		return 0, 0, 0, false, apperror.Internal(fmt.Errorf("driver_location: get current: %w", err))
 	}
-	return longitude, latitude, heading, found, nil
+	return longitude, latitude, heading, true, nil
 }
 
 // ActiveOrderForDriver returns the order a driver is currently delivering,

@@ -11,7 +11,7 @@ import { MapPin } from '../../src/components/map/map-pin'
 import { MapView } from '../../src/components/map/map-view'
 import { useDriverLocation } from '../../src/features/orders/use-driver-location'
 import { useOrder } from '../../src/features/orders/use-my-orders'
-import { formatEta, useRoute } from '../../src/features/tracking/use-route'
+import { useFormatEta, useRoute } from '../../src/features/tracking/use-route'
 import { useVendor } from '../../src/features/vendor/use-vendor'
 import { apiClient, BASE_URL } from '../../src/lib/api-client'
 
@@ -38,6 +38,7 @@ export default function OrderTrackingScreen() {
   const router = useRouter()
   const { data: order, isLoading, isError, refetch } = useOrder(orderId)
   const cameraRef = useRef<CameraRef>(null)
+  const formatEta = useFormatEta()
 
   const isOnTheWay = order?.status === 'on_the_way'
 
@@ -77,8 +78,11 @@ export default function OrderTrackingScreen() {
   const currentStep = order ? (statusStepIndexMap[order.status] ?? 0) : 0
   const isCancelled = order?.status === 'cancelled'
 
+  // Depends only on the status and the order id — NOT the order object, whose
+  // identity changes on every refetch and would tear down and reopen the
+  // socket on each poll.
   useEffect(() => {
-    if (!order || order.status !== 'on_the_way') {
+    if (!isOnTheWay) {
       setLiveLocation(null)
       return
     }
@@ -148,7 +152,7 @@ export default function OrderTrackingScreen() {
       if (retryTimer) clearTimeout(retryTimer)
       socket?.close()
     }
-  }, [order?.status, orderId, order])
+  }, [isOnTheWay, orderId])
 
   // Keep the driver and the destination both on screen as the driver moves.
   useEffect(() => {
@@ -391,7 +395,10 @@ export default function OrderTrackingScreen() {
               </Text>
               {order.exchange_rate > 1 && (
                 <Text className="text-[10px] text-gray-400">
-                  Rate: 1 USD = {order.exchange_rate.toLocaleString()} {order.currency_code}
+                  {t('orders.exchangeRate', {
+                    rate: order.exchange_rate.toLocaleString(),
+                    currency: order.currency_code,
+                  })}
                 </Text>
               )}
             </View>

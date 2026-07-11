@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { apiClient } from '../../lib/api-client'
 import { routeResponseSchema } from '../../schemas/route'
@@ -38,13 +39,23 @@ export function useRoute(from: Point | null | undefined, to: Point | null | unde
   })
 }
 
-// formatEta turns OSRM's duration in seconds into a short human string.
-export function formatEta(seconds: number): string {
-  const minutes = Math.max(1, Math.round(seconds / 60))
-  if (minutes < 60) {
-    return `${minutes} min`
+// useFormatEta turns OSRM's duration in seconds into a short human string.
+// Takes the translator rather than hardcoding "min"/"h" — those are
+// user-facing strings and must come from the locale files like every other
+// one (an Arabic user was otherwise shown "يصل خلال 12 min").
+export function useFormatEta(): (seconds: number) => string {
+  const { t } = useTranslation()
+
+  return (seconds: number) => {
+    const minutes = Math.max(1, Math.round(seconds / 60))
+    if (minutes < 60) {
+      return t('common.minutesShort', { count: minutes })
+    }
+    const hours = Math.floor(minutes / 60)
+    const remainder = minutes % 60
+    if (remainder === 0) {
+      return t('common.hoursShort', { count: hours })
+    }
+    return `${t('common.hoursShort', { count: hours })} ${t('common.minutesShort', { count: remainder })}`
   }
-  const hours = Math.floor(minutes / 60)
-  const remainder = minutes % 60
-  return remainder === 0 ? `${hours} h` : `${hours} h ${remainder} min`
 }

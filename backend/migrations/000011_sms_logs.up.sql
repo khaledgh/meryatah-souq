@@ -3,16 +3,19 @@
 -- dispatch error, by design — see otp_service.go), which made "the code
 -- never arrived" impossible to diagnose after the fact.
 --
--- SECURITY: `message` contains the live OTP code for the duration of its
--- TTL (default 5 min). This table is therefore as sensitive as the Redis
--- code store — restrict reads to super_admin, and prune old rows.
+-- The OTP code is REDACTED from `message` and `gateway_response` before they
+-- are written (see redactCode in pkg/otp/sms_provider.go): this table answers
+-- "was a message dispatched, and what did the gateway say", which never
+-- requires the code itself. Persisting live codes in a phone-indexed table
+-- that outlives their TTL would be a permanent phone -> OTP history for
+-- anyone with database read access (blueprint §5.10: no secret in logs).
 CREATE TABLE sms_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     phone TEXT NOT NULL,
     provider TEXT NOT NULL,              -- 'sms' | 'whatsapp'
-    message TEXT NOT NULL,               -- body actually sent to the gateway
+    message TEXT NOT NULL,               -- body sent, with the code redacted
     success BOOLEAN NOT NULL,
-    gateway_response TEXT,               -- raw provider reply, for debugging
+    gateway_response TEXT,               -- provider reply, with the code redacted
     error TEXT,                          -- dispatch error, if any
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

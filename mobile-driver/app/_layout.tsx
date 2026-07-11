@@ -19,6 +19,7 @@ import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
 // task must already be defined by the time that happens — it cannot be
 // registered from inside a component.
 import '../src/features/tracking/location-task'
+import { TrackingController } from '../src/features/tracking/tracking-controller'
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -60,6 +61,7 @@ export default function RootLayout() {
           <LocaleBootstrap />
           <AuthProvider>
             <AvailabilityProvider>
+              <TrackingController />
               <StatusBar style="dark" />
               <Stack screenOptions={{ headerShown: false }} />
             </AvailabilityProvider>

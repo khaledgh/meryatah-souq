@@ -2,6 +2,7 @@ import * as Location from 'expo-location'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { apiClient, toApiError } from '../../lib/api-client'
+import { stopBackgroundTracking } from '../tracking/location-task'
 
 export interface DriverCoords {
   longitude: number
@@ -98,10 +99,44 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
       setError(toApiError(err).user_message)
     } finally {
       stopWatch()
+      // Belt and braces alongside TrackingController: going offline must never
+      // leave an off-shift driver's phone reporting its location. (The UI
+      // blocks going offline mid-delivery, so in practice the task is already
+      // stopped — but a leaked location task is not something to leave to a
+      // UI-level guard.)
+      void stopBackgroundTracking()
       setIsOnline(false)
       setIsToggling(false)
     }
   }, [stopWatch])
+
+  // Seed the position from the OS's last known fix on mount, independently of
+  // the online toggle. `isOnline` is React state with no persistence, so after
+  // a cold start (or an OS-initiated relaunch) a driver can be MID-DELIVERY —
+  // the background task is dutifully reporting to the server — while this
+  // context still believes it has no location. That left the driver's own map
+  // with no pin and a degenerate pickup→pickup route, even though the
+  // customer's map was tracking them correctly.
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync()
+      if (status !== 'granted' || !active) return
+      const last = await Location.getLastKnownPositionAsync()
+      // Don't clobber a live fix from the watch, if one already arrived.
+      if (!last || !active) return
+      setLocation((current) =>
+        current ?? {
+          longitude: last.coords.longitude,
+          latitude: last.coords.latitude,
+          heading: last.coords.heading,
+        },
+      )
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => stopWatch, [stopWatch])
 

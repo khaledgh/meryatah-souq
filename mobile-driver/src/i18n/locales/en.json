@@ -12,7 +12,11 @@
     "back": "Back",
     "ok": "OK",
     "skip": "Skip",
-    "next": "Next"
+    "next": "Next",
+    "minutesShort_one": "{{count}} min",
+    "minutesShort_other": "{{count}} min",
+    "hoursShort_one": "{{count}} hr",
+    "hoursShort_other": "{{count}} hr"
   },
   "language": {
     "title": "Choose your language",
