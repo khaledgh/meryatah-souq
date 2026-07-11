@@ -31,7 +31,7 @@ func NewAdminUserService(db *gorm.DB) *AdminUserService {
 // selected — models.User already excludes PasswordHash from JSON via its
 // `json:"-"` tag.
 func (s *AdminUserService) ListByRole(ctx context.Context, role models.UserRole) ([]models.User, *apperror.AppError) {
-	var users []models.User
+	users := make([]models.User, 0)
 	if err := s.db.WithContext(ctx).Where("role = ?", role).Order("created_at DESC").Find(&users).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("admin_user: list by role: %w", err))
 	}

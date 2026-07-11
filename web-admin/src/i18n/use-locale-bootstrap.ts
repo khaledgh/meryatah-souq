@@ -26,7 +26,7 @@ export function useLocaleBootstrap() {
     void (async () => {
       try {
         const response = await apiClient.get('/locales')
-        const parsed = localeListSchema.parse(response.data).data
+        const parsed = localeListSchema.parse(response.data).data ?? []
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is mutated by the cleanup fn after the await; the linter can't see that across the async boundary.
         if (!cancelled) setLocales(parsed)
       } catch {

@@ -26,7 +26,7 @@ export function useLocaleBootstrap() {
     void (async () => {
       try {
         const response = await apiClient.get('/locales')
-        const parsed = localeListSchema.parse(response.data).data
+        const parsed = localeListSchema.parse(response.data).data ?? []
         if (!cancelled) setLocales(parsed)
       } catch {
         // Non-fatal: the switcher falls back to its static list and

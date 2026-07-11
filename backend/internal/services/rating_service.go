@@ -88,7 +88,7 @@ func (s *RatingService) Create(ctx context.Context, userID, orderID string, scor
 // ListForDriver returns a driver's received ratings (blueprint §11.D5
 // history/earnings — rating display).
 func (s *RatingService) ListForDriver(ctx context.Context, driverID string) ([]models.Rating, *apperror.AppError) {
-	var ratings []models.Rating
+	ratings := make([]models.Rating, 0)
 	if err := s.db.WithContext(ctx).Where("driver_id = ?", driverID).Order("created_at DESC").Find(&ratings).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("rating: list for driver: %w", err))
 	}

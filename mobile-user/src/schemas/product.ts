@@ -19,13 +19,19 @@ export const productSchema = z.object({
   stock: z.number(),
   is_active: z.boolean(),
   created_at: z.string(),
-  images: z.array(productImageSchema),
+  // Accept null off the wire (an older backend emits it for a product with
+  // no images) but hand consumers a guaranteed array, so no screen has to
+  // null-check before mapping.
+  images: z
+    .array(productImageSchema)
+    .nullable()
+    .transform((images) => images ?? []),
   display_currency: z.string(),
   display_price: z.number(),
 })
 
 export const productListSchema = z.object({
-  data: z.array(productSchema),
+  data: z.array(productSchema).nullable(),
 })
 
 export const productDetailSchema = z.object({
@@ -40,7 +46,7 @@ export const categorySchema = z.object({
 })
 
 export const categoryListSchema = z.object({
-  data: z.array(categorySchema),
+  data: z.array(categorySchema).nullable(),
 })
 
 export type Product = z.infer<typeof productSchema>

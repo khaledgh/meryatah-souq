@@ -11,7 +11,7 @@ export const bannerAdSchema = z.object({
 })
 
 export const bannerAdListSchema = z.object({
-  data: z.array(bannerAdSchema),
+  data: z.array(bannerAdSchema).nullable(),
 })
 
 export type BannerAd = z.infer<typeof bannerAdSchema>

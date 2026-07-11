@@ -14,7 +14,7 @@ export const couponSchema = z.object({
 })
 
 export const couponListSchema = z.object({
-  data: z.array(couponSchema),
+  data: z.array(couponSchema).nullable(),
 })
 
 export type Coupon = z.infer<typeof couponSchema>

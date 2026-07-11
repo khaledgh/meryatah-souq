@@ -12,7 +12,7 @@ export function useLocales() {
     queryKey: LOCALES_KEY,
     queryFn: async () => {
       const response = await apiClient.get('/admin/locales')
-      return localeListSchema.parse(response.data).data
+      return localeListSchema.parse(response.data).data ?? []
     },
   })
 }
@@ -70,7 +70,7 @@ export function useTranslations(locale: string | undefined) {
     queryKey: [...TRANSLATIONS_KEY, locale],
     queryFn: async () => {
       const response = await apiClient.get('/admin/translations', { params: locale ? { locale } : {} })
-      return uiTranslationListSchema.parse(response.data).data
+      return uiTranslationListSchema.parse(response.data).data ?? []
     },
     enabled: locale !== undefined,
   })

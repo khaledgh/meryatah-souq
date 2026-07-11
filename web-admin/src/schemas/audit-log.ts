@@ -12,7 +12,13 @@ export const auditLogSchema = z.object({
 })
 
 export const auditLogPageSchema = z.object({
-  data: z.array(auditLogSchema),
+  // Accept null off the wire (an older backend emits it when a filter matches
+  // nothing) but hand consumers a guaranteed array — the page reads
+  // data.data.length directly, which would throw on null.
+  data: z
+    .array(auditLogSchema)
+    .nullable()
+    .transform((rows) => rows ?? []),
   total: z.number(),
 })
 

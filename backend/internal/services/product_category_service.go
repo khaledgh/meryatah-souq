@@ -45,7 +45,7 @@ func (s *ProductCategoryService) resolveIconURLs(ctx context.Context, categories
 
 // List returns all product categories for admin management, priority-ordered.
 func (s *ProductCategoryService) List(ctx context.Context) ([]models.ProductCategory, *apperror.AppError) {
-	var categories []models.ProductCategory
+	categories := make([]models.ProductCategory, 0)
 	if err := s.db.WithContext(ctx).Order("sort_order ASC").Find(&categories).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("product_category: list: %w", err))
 	}
@@ -61,7 +61,7 @@ func (s *ProductCategoryService) ListActive(ctx context.Context, storeCategoryID
 	if storeCategoryID != "" {
 		query = query.Where("store_category_id = ?", storeCategoryID)
 	}
-	var categories []models.ProductCategory
+	categories := make([]models.ProductCategory, 0)
 	if err := query.Order("sort_order ASC").Find(&categories).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("product_category: list active: %w", err))
 	}

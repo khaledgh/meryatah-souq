@@ -38,12 +38,12 @@ type CurrencyWithRate struct {
 
 // List returns every currency joined with its current exchange rate.
 func (s *CurrencyAdminService) List(ctx context.Context) ([]CurrencyWithRate, *apperror.AppError) {
-	var currencies []models.Currency
+	currencies := make([]models.Currency, 0)
 	if err := s.db.WithContext(ctx).Order("code ASC").Find(&currencies).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("currency_admin: list currencies: %w", err))
 	}
 
-	var rates []models.ExchangeRate
+	rates := make([]models.ExchangeRate, 0)
 	if err := s.db.WithContext(ctx).Find(&rates).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("currency_admin: list rates: %w", err))
 	}

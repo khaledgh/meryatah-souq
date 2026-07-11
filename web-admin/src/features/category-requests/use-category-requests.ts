@@ -10,7 +10,7 @@ export function useCategoryRequests(status: CategoryRequestStatus = 'pending') {
     queryKey: [...CATEGORY_REQUESTS_KEY, status],
     queryFn: async () => {
       const response = await apiClient.get('/admin/category-requests', { params: { status } })
-      return categoryRequestListSchema.parse(response.data).data
+      return categoryRequestListSchema.parse(response.data).data ?? []
     },
   })
 }

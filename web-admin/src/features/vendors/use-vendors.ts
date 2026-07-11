@@ -17,7 +17,7 @@ export function useVendors() {
       const response = await apiClient.get('/vendors/nearby', {
         params: { lon: 35.5, lat: 33.9, radius_m: 20000000, limit: 100 },
       })
-      return vendorListSchema.parse(response.data).data
+      return vendorListSchema.parse(response.data).data ?? []
     },
   })
 }

@@ -56,11 +56,11 @@ type SettingsSnapshot struct {
 // ListAll returns every app_configs and feature_flags row (blueprint
 // §11.A10's settings/feature_flags grid).
 func (s *SettingsService) ListAll(ctx context.Context) (*SettingsSnapshot, *apperror.AppError) {
-	var configs []models.AppConfig
+	configs := make([]models.AppConfig, 0)
 	if err := s.db.WithContext(ctx).Order("key ASC").Find(&configs).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("settings: list app_configs: %w", err))
 	}
-	var flags []models.FeatureFlag
+	flags := make([]models.FeatureFlag, 0)
 	if err := s.db.WithContext(ctx).Order("key ASC").Find(&flags).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("settings: list feature_flags: %w", err))
 	}

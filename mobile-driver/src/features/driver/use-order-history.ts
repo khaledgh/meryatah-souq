@@ -10,7 +10,7 @@ export function useOrderHistory() {
     queryKey: ['driver-order-history'],
     queryFn: async () => {
       const response = await apiClient.get('/driver/orders/history')
-      return orderListSchema.parse(response.data).data
+      return orderListSchema.parse(response.data).data ?? []
     },
   })
 }

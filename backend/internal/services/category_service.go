@@ -23,7 +23,7 @@ func NewCategoryService(db *gorm.DB) *CategoryService {
 }
 
 func (s *CategoryService) List(ctx context.Context, vendorID string) ([]models.Category, *apperror.AppError) {
-	var rows []models.Category
+	rows := make([]models.Category, 0)
 	if err := s.db.WithContext(ctx).Where("vendor_id = ?", vendorID).Order("sort_order ASC").Find(&rows).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("category: list: %w", err))
 	}

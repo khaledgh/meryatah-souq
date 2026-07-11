@@ -10,7 +10,7 @@ export const storeCategorySchema = z.object({
 })
 
 export const storeCategoryListSchema = z.object({
-  data: z.array(storeCategorySchema),
+  data: z.array(storeCategorySchema).nullable(),
 })
 
 export type StoreCategory = z.infer<typeof storeCategorySchema>

@@ -140,7 +140,7 @@ func (s *VendorApplicationService) List(ctx context.Context, status models.Vendo
 		ORDER BY submitted_at DESC
 	`, string(status), string(status))
 
-	var apps []models.VendorApplication
+	apps := make([]models.VendorApplication, 0)
 	if err := q.Scan(&apps).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("vendor_application: list: %w", err))
 	}

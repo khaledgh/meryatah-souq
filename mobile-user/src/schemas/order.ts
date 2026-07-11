@@ -38,11 +38,11 @@ export const orderSchema = z.object({
   delivery_latitude: z.number(),
   // Frontend helpers
   vendor_name: z.string().optional(),
-  items: z.array(orderItemSchema).optional(),
+  items: z.array(orderItemSchema).nullable().optional(),
 })
 
 export const orderListSchema = z.object({
-  data: z.array(orderSchema),
+  data: z.array(orderSchema).nullable(),
 })
 
 export const orderDetailSchema = z.object({
@@ -60,7 +60,7 @@ export const slotSchema = z.object({
 })
 
 export const slotListSchema = z.object({
-  data: z.array(slotSchema),
+  data: z.array(slotSchema).nullable(),
 })
 
 export type Slot = z.infer<typeof slotSchema>

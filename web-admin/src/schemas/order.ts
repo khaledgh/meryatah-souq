@@ -17,7 +17,7 @@ export const orderSchema = z.object({
 })
 
 export const orderListSchema = z.object({
-  data: z.array(orderSchema),
+  data: z.array(orderSchema).nullable(),
 })
 
 export type Order = z.infer<typeof orderSchema>

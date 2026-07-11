@@ -11,7 +11,7 @@ export function useStoreCategories() {
     queryKey: ['store-categories'],
     queryFn: async () => {
       const response = await apiClient.get('/store-categories')
-      return storeCategoryListSchema.parse(response.data).data
+      return storeCategoryListSchema.parse(response.data).data ?? []
     },
   })
 }

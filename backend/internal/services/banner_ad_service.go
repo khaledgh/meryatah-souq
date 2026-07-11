@@ -50,7 +50,7 @@ func (s *BannerAdService) resolveImageURLs(ctx context.Context, ads []models.Ban
 // priority first (blueprint §11.C5). Public — any user/guest sees ads.
 func (s *BannerAdService) ListActive(ctx context.Context) ([]models.BannerAd, *apperror.AppError) {
 	now := time.Now()
-	var ads []models.BannerAd
+	ads := make([]models.BannerAd, 0)
 	err := s.db.WithContext(ctx).
 		Where("is_active = true").
 		Where("starts_at IS NULL OR starts_at <= ?", now).
@@ -261,7 +261,7 @@ func (s *BannerAdService) Delete(ctx context.Context, adID string) *apperror.App
 // List returns all banner ads for admin management (blueprint §11.A8),
 // regardless of active/schedule status.
 func (s *BannerAdService) List(ctx context.Context) ([]models.BannerAd, *apperror.AppError) {
-	var ads []models.BannerAd
+	ads := make([]models.BannerAd, 0)
 	if err := s.db.WithContext(ctx).Order("priority DESC").Find(&ads).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("banner_ad: list: %w", err))
 	}

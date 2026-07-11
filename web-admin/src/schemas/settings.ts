@@ -15,9 +15,17 @@ export const featureFlagSchema = z.object({
 })
 
 export const settingsSnapshotSchema = z.object({
+  // Accept null off the wire but hand consumers guaranteed arrays — the
+  // settings page maps over both directly, which would throw on null.
   data: z.object({
-    app_configs: z.array(appConfigSchema),
-    feature_flags: z.array(featureFlagSchema),
+    app_configs: z
+      .array(appConfigSchema)
+      .nullable()
+      .transform((rows) => rows ?? []),
+    feature_flags: z
+      .array(featureFlagSchema)
+      .nullable()
+      .transform((rows) => rows ?? []),
   }),
 })
 

@@ -13,7 +13,7 @@ export const storeCategorySchema = z.object({
 })
 
 export const storeCategoryListSchema = z.object({
-  data: z.array(storeCategorySchema),
+  data: z.array(storeCategorySchema).nullable(),
 })
 
 export type TemplateKind = z.infer<typeof templateKindSchema>

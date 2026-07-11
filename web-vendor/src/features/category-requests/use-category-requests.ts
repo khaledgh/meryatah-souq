@@ -10,7 +10,7 @@ export function useCategoryRequests(vendorId: string) {
     queryKey: categoryRequestsKey(vendorId),
     queryFn: async () => {
       const response = await apiClient.get(`/vendor/${vendorId}/category-requests`)
-      return categoryRequestListSchema.parse(response.data).data
+      return categoryRequestListSchema.parse(response.data).data ?? []
     },
   })
 }

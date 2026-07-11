@@ -13,7 +13,7 @@ export function useAdminUsers(role: 'user' | 'driver') {
     queryKey: usersKey(role),
     queryFn: async () => {
       const response = await apiClient.get(path)
-      return adminUserListSchema.parse(response.data).data
+      return adminUserListSchema.parse(response.data).data ?? []
     },
   })
 }
@@ -93,7 +93,7 @@ export function useVendorOwners() {
     queryKey: ['admin-vendor-owners'],
     queryFn: async () => {
       const response = await apiClient.get('/admin/vendor-owners')
-      return adminUserListSchema.parse(response.data).data
+      return adminUserListSchema.parse(response.data).data ?? []
     },
   })
 }

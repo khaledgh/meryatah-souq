@@ -10,7 +10,7 @@ export const localeSchema = z.object({
 })
 
 export const localeListSchema = z.object({
-  data: z.array(localeSchema),
+  data: z.array(localeSchema).nullable(),
 })
 
 export const uiTranslationSchema = z.object({
@@ -22,7 +22,7 @@ export const uiTranslationSchema = z.object({
 })
 
 export const uiTranslationListSchema = z.object({
-  data: z.array(uiTranslationSchema),
+  data: z.array(uiTranslationSchema).nullable(),
 })
 
 export const missingKeySchema = z.object({

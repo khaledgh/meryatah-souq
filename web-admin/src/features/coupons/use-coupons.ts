@@ -10,7 +10,7 @@ export function useCoupons() {
     queryKey: COUPONS_KEY,
     queryFn: async () => {
       const response = await apiClient.get('/admin/coupons')
-      return couponListSchema.parse(response.data).data
+      return couponListSchema.parse(response.data).data ?? []
     },
   })
 }

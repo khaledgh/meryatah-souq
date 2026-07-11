@@ -10,7 +10,7 @@ export function useBannerAds() {
     queryKey: BANNER_ADS_KEY,
     queryFn: async () => {
       const response = await apiClient.get('/admin/banner-ads')
-      return bannerAdListSchema.parse(response.data).data
+      return bannerAdListSchema.parse(response.data).data ?? []
     },
   })
 }

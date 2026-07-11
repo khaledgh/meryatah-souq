@@ -10,7 +10,7 @@ export function useCurrencies() {
     queryKey: CURRENCIES_KEY,
     queryFn: async () => {
       const response = await apiClient.get('/admin/currencies')
-      return currencyListSchema.parse(response.data).data
+      return currencyListSchema.parse(response.data).data ?? []
     },
   })
 }

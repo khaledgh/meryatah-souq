@@ -55,7 +55,7 @@ func (s *AuditReadService) List(ctx context.Context, filter AuditLogFilter) (*Au
 		return nil, apperror.Internal(fmt.Errorf("audit_read: count: %w", err))
 	}
 
-	var logs []models.AuditLog
+	logs := make([]models.AuditLog, 0)
 	if err := query.Order("created_at DESC").Limit(auditLogListLimit).Find(&logs).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("audit_read: list: %w", err))
 	}

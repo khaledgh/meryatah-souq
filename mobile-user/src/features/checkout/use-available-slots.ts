@@ -7,7 +7,7 @@ export function useAvailableSlots(vendorId: string | undefined) {
     queryKey: ['available-slots', vendorId],
     queryFn: async () => {
       const response = await apiClient.get(`/vendors/${String(vendorId)}/scheduling/slots`)
-      return slotListSchema.parse(response.data).data
+      return slotListSchema.parse(response.data).data ?? []
     },
     enabled: !!vendorId,
   })

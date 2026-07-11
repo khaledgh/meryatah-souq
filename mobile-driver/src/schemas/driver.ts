@@ -21,7 +21,7 @@ export const availableOrderSchema = z.object({
 })
 
 export const availableOrderListSchema = z.object({
-  data: z.array(availableOrderSchema),
+  data: z.array(availableOrderSchema).nullable(),
 })
 
 export type AvailableOrder = z.infer<typeof availableOrderSchema>

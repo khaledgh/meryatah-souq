@@ -63,7 +63,7 @@ func (s *VendorHoursService) IsOpenNow(ctx context.Context, vendorID string, at 
 
 	// 0=Sunday to match Postgres's/blueprint's day_of_week convention.
 	weekday := int(local.Weekday())
-	var hours []models.VendorHour
+	hours := make([]models.VendorHour, 0)
 	if err := s.db.WithContext(ctx).
 		Where("vendor_id = ? AND day_of_week = ?", vendorID, weekday).
 		Find(&hours).Error; err != nil {

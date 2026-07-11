@@ -157,7 +157,7 @@ func (s *ProductService) Delete(ctx context.Context, vendorID, productID string)
 // List returns a vendor's products with resolved images and converted
 // display prices in the vendor's display_currency (falls back to USD).
 func (s *ProductService) List(ctx context.Context, vendorID string) ([]ProductWithDisplay, *apperror.AppError) {
-	var products []models.Product
+	products := make([]models.Product, 0)
 	if err := s.db.WithContext(ctx).Where("vendor_id = ?", vendorID).Order("created_at DESC").Find(&products).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("product: list: %w", err))
 	}
@@ -209,7 +209,7 @@ func (s *ProductService) vendorDisplayCurrency(ctx context.Context, vendorID str
 }
 
 func (s *ProductService) attachDisplay(ctx context.Context, p models.Product, displayCurrency string) (*ProductWithDisplay, *apperror.AppError) {
-	var images []models.ProductImage
+	images := make([]models.ProductImage, 0)
 	if err := s.db.WithContext(ctx).Where("product_id = ?", p.ID).Order("sort_order ASC").Find(&images).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("product: load images: %w", err))
 	}

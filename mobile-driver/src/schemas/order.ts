@@ -46,7 +46,7 @@ export const orderSchema = z.object({
   vendor_name: z.string().optional(),
   vendor_longitude: z.number().optional(),
   vendor_latitude: z.number().optional(),
-  items: z.array(orderItemSchema).optional(),
+  items: z.array(orderItemSchema).nullable().optional(),
 })
 
 // GET /driver/orders/active returns `{ "data": Order | null }` — null is a
@@ -56,7 +56,7 @@ export const nullableOrderDetailSchema = z.object({
 })
 
 export const orderListSchema = z.object({
-  data: z.array(orderSchema),
+  data: z.array(orderSchema).nullable(),
 })
 
 export type Order = z.infer<typeof orderSchema>

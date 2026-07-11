@@ -54,7 +54,7 @@ var validTemplateKinds = map[string]bool{
 // List returns all store categories for admin management, regardless of
 // active status, priority-ordered.
 func (s *StoreCategoryService) List(ctx context.Context) ([]models.StoreCategory, *apperror.AppError) {
-	var categories []models.StoreCategory
+	categories := make([]models.StoreCategory, 0)
 	if err := s.db.WithContext(ctx).Order("sort_order ASC").Find(&categories).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("store_category: list: %w", err))
 	}
@@ -65,7 +65,7 @@ func (s *StoreCategoryService) List(ctx context.Context) ([]models.StoreCategory
 // ListActive returns active store categories only — the public listing the
 // mobile home screen renders as section tiles.
 func (s *StoreCategoryService) ListActive(ctx context.Context) ([]models.StoreCategory, *apperror.AppError) {
-	var categories []models.StoreCategory
+	categories := make([]models.StoreCategory, 0)
 	if err := s.db.WithContext(ctx).Where("is_active = true").Order("sort_order ASC").Find(&categories).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("store_category: list active: %w", err))
 	}

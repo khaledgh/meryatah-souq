@@ -18,7 +18,7 @@ export function useAdminOrders(filters: AdminOrderFilters) {
       const response = await apiClient.get('/admin/orders', {
         params: { ...filters, scheduled_only: filters.scheduled_only ? 'true' : undefined },
       })
-      return orderListSchema.parse(response.data).data
+      return orderListSchema.parse(response.data).data ?? []
     },
   })
 }

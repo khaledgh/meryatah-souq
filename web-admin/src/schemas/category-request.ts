@@ -20,7 +20,7 @@ export const categoryRequestSchema = z.object({
 })
 
 export const categoryRequestListSchema = z.object({
-  data: z.array(categoryRequestSchema),
+  data: z.array(categoryRequestSchema).nullable(),
 })
 
 export type CategoryRequestStatus = z.infer<typeof categoryRequestStatusSchema>

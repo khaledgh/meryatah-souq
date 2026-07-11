@@ -14,7 +14,7 @@ export const adminUserSchema = z.object({
 })
 
 export const adminUserListSchema = z.object({
-  data: z.array(adminUserSchema),
+  data: z.array(adminUserSchema).nullable(),
 })
 
 export type AdminUser = z.infer<typeof adminUserSchema>

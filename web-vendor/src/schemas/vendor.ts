@@ -22,7 +22,7 @@ export const vendorSchema = z.object({
 })
 
 export const vendorListSchema = z.object({
-  data: z.array(vendorSchema),
+  data: z.array(vendorSchema).nullable(),
 })
 
 export const vendorDetailSchema = z.object({

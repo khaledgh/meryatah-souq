@@ -13,7 +13,7 @@ export function useAvailableOrders(enabled: boolean) {
     queryKey: ['driver-available-orders'],
     queryFn: async () => {
       const response = await apiClient.get('/driver/orders/available')
-      return availableOrderListSchema.parse(response.data).data
+      return availableOrderListSchema.parse(response.data).data ?? []
     },
     enabled,
     refetchInterval: enabled ? POLL_INTERVAL_MS : false,

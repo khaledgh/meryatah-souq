@@ -41,7 +41,7 @@ func (s *LocalizationAdminService) notifyRefresh(ctx context.Context) {
 // ListLocales returns every locale (active and inactive), sorted for
 // display (blueprint §11.A12's locales table).
 func (s *LocalizationAdminService) ListLocales(ctx context.Context) ([]models.Locale, *apperror.AppError) {
-	var locales []models.Locale
+	locales := make([]models.Locale, 0)
 	if err := s.db.WithContext(ctx).Order("sort_order ASC, code ASC").Find(&locales).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("localization_admin: list locales: %w", err))
 	}
@@ -138,7 +138,7 @@ func (s *LocalizationAdminService) ListTranslations(ctx context.Context, locale 
 	if locale != nil {
 		query = query.Where("locale = ?", *locale)
 	}
-	var rows []models.UITranslation
+	rows := make([]models.UITranslation, 0)
 	if err := query.Order("namespace ASC, key ASC, locale ASC").Find(&rows).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("localization_admin: list translations: %w", err))
 	}
@@ -181,7 +181,7 @@ func (s *LocalizationAdminService) MissingKeyReport(ctx context.Context) ([]Miss
 	}
 
 	locales := s.cache.ActiveLocales()
-	var missing []MissingKeyEntry
+	missing := make([]MissingKeyEntry, 0)
 	for _, l := range locales {
 		if l.Code == defaultLocale.Code {
 			continue

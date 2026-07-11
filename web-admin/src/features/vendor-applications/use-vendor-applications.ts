@@ -13,7 +13,7 @@ export function useVendorApplications(status: VendorApplicationStatus = 'pending
     queryKey: [...VENDOR_APPLICATIONS_KEY, status],
     queryFn: async () => {
       const response = await apiClient.get('/admin/vendor-applications', { params: { status } })
-      return vendorApplicationListSchema.parse(response.data).data
+      return vendorApplicationListSchema.parse(response.data).data ?? []
     },
   })
 }

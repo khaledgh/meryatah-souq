@@ -101,7 +101,7 @@ func (s *CategoryRequestService) List(ctx context.Context, status models.Categor
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	var requests []models.CategoryRequest
+	requests := make([]models.CategoryRequest, 0)
 	if err := query.Find(&requests).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("category_request: list: %w", err))
 	}
@@ -111,7 +111,7 @@ func (s *CategoryRequestService) List(ctx context.Context, status models.Categor
 // ListForVendor returns a vendor's own requests, newest first (vendor
 // dashboard's "my requests" view).
 func (s *CategoryRequestService) ListForVendor(ctx context.Context, vendorID string) ([]models.CategoryRequest, *apperror.AppError) {
-	var requests []models.CategoryRequest
+	requests := make([]models.CategoryRequest, 0)
 	if err := s.db.WithContext(ctx).Where("vendor_id = ?", vendorID).Order("submitted_at DESC").Find(&requests).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("category_request: list for vendor: %w", err))
 	}

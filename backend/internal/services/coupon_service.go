@@ -223,7 +223,7 @@ func (s *CouponService) List(ctx context.Context, vendorID string) ([]models.Cou
 	if vendorID != "" {
 		query = query.Where("vendor_id = ?", vendorID)
 	}
-	var coupons []models.Coupon
+	coupons := make([]models.Coupon, 0)
 	if err := query.Order("code ASC").Find(&coupons).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("coupon: list: %w", err))
 	}

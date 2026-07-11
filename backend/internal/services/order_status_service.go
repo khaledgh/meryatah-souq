@@ -171,7 +171,7 @@ func (s *OrderService) ListForVendor(ctx context.Context, vendorID string, statu
 	}
 	query += ` ORDER BY placed_at DESC`
 
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: list for vendor: %w", err))
 	}
@@ -218,7 +218,7 @@ func (s *OrderService) AdminListAll(ctx context.Context, filter AdminOrderFilter
 	}
 	query += ` ORDER BY placed_at DESC LIMIT 200`
 
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: admin list all: %w", err))
 	}
@@ -228,7 +228,7 @@ func (s *OrderService) AdminListAll(ctx context.Context, filter AdminOrderFilter
 
 // ListForUser returns a user's own order history (blueprint §11.C11).
 func (s *OrderService) ListForUser(ctx context.Context, userID string) ([]models.Order, *apperror.AppError) {
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	if err := s.db.WithContext(ctx).Raw(orderSelectColumns+` WHERE user_id = ? ORDER BY placed_at DESC`, userID).
 		Scan(&orders).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: list for user: %w", err))
@@ -248,7 +248,7 @@ func (s *OrderService) GetForUser(ctx context.Context, userID, orderID string) (
 	if o.ID == "" {
 		return nil, apperror.NotFound("order")
 	}
-	var items []models.OrderItem
+	items := make([]models.OrderItem, 0)
 	if err := s.db.WithContext(ctx).Where("order_id = ?", o.ID).Find(&items).Error; err == nil {
 		o.Items = items
 	}
@@ -329,7 +329,7 @@ func (s *OrderService) ListAvailableForDrivers(ctx context.Context, driverID str
 		       ST_X(o.delivery_point::geometry) AS delivery_longitude, ST_Y(o.delivery_point::geometry) AS delivery_latitude,
 		       o.subtotal_usd, o.placed_at`
 
-	var orders []AvailableOrder
+	orders := make([]AvailableOrder, 0)
 
 	lon, lat, _, hasPosition, appErr := s.driverPosition(ctx, driverID)
 	if appErr != nil {
@@ -420,7 +420,7 @@ func (s *OrderService) GetActiveForDriver(ctx context.Context, driverID string) 
 	if o.ID == "" {
 		return nil, nil
 	}
-	var items []models.OrderItem
+	items := make([]models.OrderItem, 0)
 	if err := s.db.WithContext(ctx).Where("order_id = ?", o.ID).Find(&items).Error; err == nil {
 		o.Items = items
 	}
@@ -430,7 +430,7 @@ func (s *OrderService) GetActiveForDriver(ctx context.Context, driverID string) 
 // ListHistoryForDriver returns a driver's completed/cancelled deliveries,
 // most recent first (blueprint §11.D5).
 func (s *OrderService) ListHistoryForDriver(ctx context.Context, driverID string) ([]models.Order, *apperror.AppError) {
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	err := s.db.WithContext(ctx).Raw(
 		orderSelectColumns+` WHERE driver_id = ? AND status IN ('delivered', 'cancelled') ORDER BY placed_at DESC`,
 		driverID,
@@ -458,7 +458,14 @@ func (s *OrderService) populateOrderItems(ctx context.Context, orders []models.O
 			itemsByOrder[item.OrderID] = append(itemsByOrder[item.OrderID], item)
 		}
 		for i := range orders {
-			orders[i].Items = itemsByOrder[orders[i].ID]
+			// A map miss yields a nil slice, which marshals to JSON `null`,
+			// not `[]` — and a client's z.array() then throws on any order
+			// with no items. Always hand back a real, empty slice.
+			if items, ok := itemsByOrder[orders[i].ID]; ok {
+				orders[i].Items = items
+			} else {
+				orders[i].Items = make([]models.OrderItem, 0)
+			}
 		}
 	}
 }

@@ -11,7 +11,7 @@ export const currencyWithRateSchema = z.object({
 })
 
 export const currencyListSchema = z.object({
-  data: z.array(currencyWithRateSchema),
+  data: z.array(currencyWithRateSchema).nullable(),
 })
 
 export type CurrencyWithRate = z.infer<typeof currencyWithRateSchema>

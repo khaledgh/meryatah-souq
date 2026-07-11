@@ -12,7 +12,7 @@ export const productCategorySchema = z.object({
 })
 
 export const productCategoryListSchema = z.object({
-  data: z.array(productCategorySchema),
+  data: z.array(productCategorySchema).nullable(),
 })
 
 export type ProductCategory = z.infer<typeof productCategorySchema>

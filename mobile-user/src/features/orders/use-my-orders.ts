@@ -8,7 +8,7 @@ export function useMyOrders() {
     queryKey: ['my-orders'],
     queryFn: async () => {
       const response = await apiClient.get('/user/orders')
-      const orders = orderListSchema.parse(response.data).data
+      const orders = orderListSchema.parse(response.data).data ?? []
       // Newest first — the API returns rows in an unspecified order, so sort
       // by placed_at descending for a stable, expected order history.
       return [...orders].sort(

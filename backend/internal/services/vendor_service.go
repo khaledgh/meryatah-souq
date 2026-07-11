@@ -285,7 +285,7 @@ func (s *VendorService) Nearby(ctx context.Context, longitude, latitude float64,
 	query += ` ORDER BY distance_meters ASC LIMIT ?`
 	args = append(args, limit)
 
-	var vendors []models.Vendor
+	vendors := make([]models.Vendor, 0)
 	if err := s.db.WithContext(ctx).Raw(query, args...).Scan(&vendors).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("vendor: nearby search: %w", err))
 	}

@@ -10,7 +10,7 @@ export function useProductCategories() {
     queryKey: PRODUCT_CATEGORIES_KEY,
     queryFn: async () => {
       const response = await apiClient.get('/admin/product-categories')
-      return productCategoryListSchema.parse(response.data).data
+      return productCategoryListSchema.parse(response.data).data ?? []
     },
   })
 }

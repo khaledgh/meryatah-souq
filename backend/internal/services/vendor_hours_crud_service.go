@@ -43,7 +43,7 @@ func (s *VendorHoursService) SetWeeklyHours(ctx context.Context, vendorID string
 
 // ListWeeklyHours returns all vendor_hours rows for a vendor.
 func (s *VendorHoursService) ListWeeklyHours(ctx context.Context, vendorID string) ([]models.VendorHour, *apperror.AppError) {
-	var rows []models.VendorHour
+	rows := make([]models.VendorHour, 0)
 	if err := s.db.WithContext(ctx).Where("vendor_id = ?", vendorID).Order("day_of_week ASC").Find(&rows).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("hours: list weekly hours: %w", err))
 	}
@@ -81,7 +81,7 @@ func (s *VendorHoursService) UpsertOverride(ctx context.Context, o models.Vendor
 
 // ListOverrides returns all overrides for a vendor, most recent first.
 func (s *VendorHoursService) ListOverrides(ctx context.Context, vendorID string) ([]models.VendorHourOverride, *apperror.AppError) {
-	var rows []models.VendorHourOverride
+	rows := make([]models.VendorHourOverride, 0)
 	if err := s.db.WithContext(ctx).Where("vendor_id = ?", vendorID).Order("date DESC").Find(&rows).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("hours: list overrides: %w", err))
 	}

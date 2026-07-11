@@ -24,7 +24,7 @@ export const vendorApplicationSchema = z.object({
 })
 
 export const vendorApplicationListSchema = z.object({
-  data: z.array(vendorApplicationSchema),
+  data: z.array(vendorApplicationSchema).nullable(),
 })
 
 export type VendorApplicationStatus = z.infer<typeof vendorApplicationStatusSchema>
