@@ -339,9 +339,9 @@ type ActiveDriverOrder struct {
 func (s *OrderService) GetActiveForDriver(ctx context.Context, driverID string) (*ActiveDriverOrder, *apperror.AppError) {
 	var o ActiveDriverOrder
 	err := s.db.WithContext(ctx).Raw(`
-		SELECT id, user_id, vendor_id, driver_id, status, subtotal_usd, currency_code,
-		       exchange_rate, subtotal_display, commission_pct, commission_usd, coupon_id,
-		       scheduled_for, placed_at, delivered_at,
+		SELECT o.id, o.user_id, o.vendor_id, o.driver_id, o.status, o.subtotal_usd, o.currency_code,
+		       o.exchange_rate, o.subtotal_display, o.commission_pct, o.commission_usd, o.coupon_id,
+		       o.scheduled_for, o.placed_at, o.delivered_at,
 		       ST_X(o.delivery_point::geometry) AS delivery_longitude,
 		       ST_Y(o.delivery_point::geometry) AS delivery_latitude,
 		       COALESCE(v.name_i18n->>'en', '') AS vendor_name,
