@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"meryata-souq/backend/internal/config"
+	"meryata-souq/backend/internal/pkg/buildinfo"
 )
 
 // HealthHandler reports process liveness plus Postgres/Redis/PostGIS
@@ -28,6 +29,9 @@ type healthResponse struct {
 	Database string `json:"database"`
 	Redis    string `json:"redis"`
 	PostGIS  string `json:"postgis"`
+	// Version identifies the build actually running, so "is my deploy live?"
+	// can be answered with a curl instead of shell access to read the logs.
+	Version string `json:"version"`
 }
 
 // Check is registered at GET /health. It always returns a body describing
@@ -36,7 +40,13 @@ type healthResponse struct {
 // check are independent, so they run concurrently.
 func (h *HealthHandler) Check(c echo.Context, redisPing func() error) error {
 	ctx := c.Request().Context()
-	resp := healthResponse{Status: "ok", Database: "ok", Redis: "ok", PostGIS: "ok"}
+	resp := healthResponse{
+		Status:   "ok",
+		Database: "ok",
+		Redis:    "ok",
+		PostGIS:  "ok",
+		Version:  buildinfo.Get().Version,
+	}
 
 	type dbResult struct {
 		databaseOK bool

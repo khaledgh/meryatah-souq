@@ -22,6 +22,7 @@ import (
 	"meryata-souq/backend/internal/i18n"
 	appmw "meryata-souq/backend/internal/middleware"
 	"meryata-souq/backend/internal/models"
+	"meryata-souq/backend/internal/pkg/buildinfo"
 	"meryata-souq/backend/internal/pkg/onesignal"
 	"meryata-souq/backend/internal/pkg/otp"
 	"meryata-souq/backend/internal/services"
@@ -30,6 +31,12 @@ import (
 )
 
 func main() {
+	// First line out, before anything can fail: a deployed process must be
+	// traceable back to the exact source it was built from. Without this,
+	// "did my rebuild actually get deployed?" is unanswerable from the logs.
+	build := buildinfo.Get()
+	log.Printf("meryata-souq backend starting: %s", build)
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
@@ -372,7 +379,7 @@ func main() {
 
 	go func() {
 		addr := ":" + cfg.HTTPPort
-		log.Printf("meryata-souq backend listening on %s (env=%s)", addr, cfg.AppEnv)
+		log.Printf("meryata-souq backend listening on %s (env=%s) %s", addr, cfg.AppEnv, build)
 		if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}
