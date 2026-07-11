@@ -1,14 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { apiClient } from '../../lib/api-client'
-import { clearSession, getGuestMode, setAccessToken, setGuestMode, setRefreshToken } from '../../lib/auth-storage'
+import { clearSession, getGuestMode, getRefreshToken, setAccessToken, setGuestMode, setRefreshToken } from '../../lib/auth-storage'
 import { authResponseSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
 
-// The result of verifying an OTP: either the user is now logged in, or the
-// phone is new and registration must be completed with verificationToken.
+// The result of verifying an OTP: either the user is now logged in, the
+// phone is new and registration must be completed with verificationToken,
+// or the phone belongs to a non-user account (e.g. a driver) — this app
+// must reject that rather than silently logging them in with a role that
+// every /user/* endpoint will then 403 on (blueprint §5.3: driver/vendor
+// accounts are provisioned separately and don't share this login surface).
 type VerifyResult =
   | { kind: 'login' }
   | { kind: 'register_required'; verificationToken: string }
+  | { kind: 'not_a_user' }
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -37,11 +42,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isGuest, setIsGuest] = useState<boolean>(false)
   const [isInitializing, setIsInitializing] = useState<boolean>(true)
 
+  // Restore the session on cold start. The access token is memory-only
+  // (§5.1) and so is always gone after a restart, but the refresh token
+  // persists in the OS keychain — /auth/refresh trades it for a fresh pair
+  // AND returns the full user payload, so this one call re-establishes
+  // everything. Without it the app would bounce every returning user to the
+  // OTP screen despite holding a perfectly valid credential.
   useEffect(() => {
-    void getGuestMode().then((guest) => {
-      setIsGuest(guest)
-      setIsInitializing(false)
-    })
+    void (async () => {
+      try {
+        const refreshToken = await getRefreshToken()
+        if (!refreshToken) {
+          setIsGuest(await getGuestMode())
+          return
+        }
+        const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
+        const parsed = authResponseSchema.parse(response.data)
+        if (parsed.user.role !== 'user') {
+          // Same guard as verifyOtp: a driver/vendor phone must not hold a
+          // session here — every /user/* call would 403.
+          await clearSession()
+          return
+        }
+        setAccessToken(parsed.access_token)
+        await setRefreshToken(parsed.refresh_token)
+        await setGuestMode(false)
+        setIsGuest(false)
+        setUser(parsed.user)
+      } catch {
+        // Expired/revoked/reused refresh token — drop it and fall back to
+        // whatever guest state was stored.
+        await clearSession()
+        setIsGuest(await getGuestMode())
+      } finally {
+        setIsInitializing(false)
+      }
+    })()
   }, [])
 
   const requestOtp = useCallback(async (phone: string) => {
@@ -53,6 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const parsed = verifyOtpResponseSchema.parse(response.data)
 
     if (parsed.status === 'login' && parsed.access_token && parsed.refresh_token && parsed.user) {
+      if (parsed.user.role !== 'user') {
+        // Do not persist any session for a non-user account (e.g. a driver
+        // or vendor phone reused here) — every /user/* call would 403
+        // anyway, so fail fast at login instead of leaving the app in a
+        // broken logged-in-but-nothing-works state.
+        return { kind: 'not_a_user' }
+      }
       setAccessToken(parsed.access_token)
       await setRefreshToken(parsed.refresh_token)
       await setGuestMode(false)
@@ -83,6 +126,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    // Revoke server-side first: clearing only local storage would leave the
+    // refresh token valid for its full (now year-long) TTL, so a leaked copy
+    // would outlive the "logout" entirely. Best-effort — a failed call must
+    // still clear the local session.
+    const refreshToken = await getRefreshToken()
+    if (refreshToken) {
+      try {
+        await apiClient.post('/auth/logout', { refresh_token: refreshToken })
+      } catch {
+        // Offline or already-invalid token — proceed with the local clear.
+      }
+    }
     await clearSession()
     setIsGuest(false)
     setUser(null)

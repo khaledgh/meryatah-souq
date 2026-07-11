@@ -120,7 +120,9 @@ export default function CheckoutScreen() {
       return
     }
 
-    if (!latitude || !longitude) {
+    // != null, not falsy: 0.0 is a real coordinate (the equator / prime
+    // meridian), and treating it as "not set" would reject a legitimate point.
+    if (latitude == null || longitude == null) {
       Alert.alert(
         t('checkout.locationGpsRequiredTitle', 'GPS Location Required'),
         t('checkout.locationGpsRequiredMsg', 'Please fetch your current GPS coordinates to ensure accurate delivery.')
@@ -206,7 +208,7 @@ export default function CheckoutScreen() {
                   {t('checkout.gpsLocation', 'GPS Location')}
                 </Text>
                 <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1 font-semibold">
-                  {latitude && longitude
+                  {latitude != null && longitude != null
                     ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
                     : t('checkout.noGpsFetched', 'No GPS location coordinates loaded')}
                 </Text>

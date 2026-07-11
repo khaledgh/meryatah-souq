@@ -42,7 +42,8 @@
     "password": "Password",
     "createAccount": "Create account",
     "notADriver": "This account is not registered as a driver.",
-    "notADriverDesc": "Please contact support if you believe this is a mistake."
+    "notADriverDesc": "Please contact support if you believe this is a mistake.",
+    "noDriverAccountDesc": "There is no driver account for this number. Please contact support to be registered as a driver."
   },
   "nav": {
     "home": "Home",
@@ -94,7 +95,12 @@
     "confirmDeliveredTitle": "Confirm delivery",
     "confirmDeliveredMsg": "Mark this order as delivered?",
     "payout": "Payout",
-    "you": "You"
+    "you": "You",
+    "navigate": "Navigate",
+    "navigationFailed": "Could not open a navigation app.",
+    "etaToStore": "To store",
+    "etaToCustomer": "To customer",
+    "backgroundPermissionDenied": "Allow location access \"Always\" so customers can track your delivery even when the app is closed."
   },
   "orders": {
     "status": {

@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons'
 
 import { Button } from '../../../src/components/ui/button'
 import { useRateDriver } from '../../../src/features/orders/use-rate-driver'
+import { toApiError } from '../../../src/lib/api-client'
 
 export default function RateDriverScreen() {
   const { id: orderId } = useLocalSearchParams<{ id: string }>()
@@ -37,8 +38,8 @@ export default function RateDriverScreen() {
           },
         ]
       )
-    } catch (err: any) {
-      Alert.alert(t('common.error', 'Error'), err?.user_message || t('rating.failed', 'Failed to submit rating'))
+    } catch (err) {
+      Alert.alert(t('common.error', 'Error'), toApiError(err).user_message || t('rating.failed', 'Failed to submit rating'))
     }
   }
 

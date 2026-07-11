@@ -280,13 +280,35 @@ type AvailableOrder struct {
 	DeliveryLatitude  float64 `json:"delivery_latitude"`
 	SubtotalUSD       float64 `json:"subtotal_usd"`
 	PlacedAt          string  `json:"placed_at"`
+
+	// PickupDistanceMeters is the road-agnostic geodesic distance from the
+	// driver's last known position to the pickup. Populated only when the
+	// driver has reported a position (see ListAvailableForDrivers) — not a
+	// real column, computed by ST_Distance at read time, so it must carry an
+	// ordinary column tag, never gorm:"-" (which silently breaks GORM's
+	// raw-SQL Scan mapping).
+	PickupDistanceMeters float64 `gorm:"column:pickup_distance_meters" json:"pickup_distance_meters"`
 }
+
+// availableOrderRadiusMeters bounds how far from a driver an offerable
+// pickup can be. Without it, every online driver is shown every unassigned
+// order in the country — noise for them, and an unbounded result set for us.
+const availableOrderRadiusMeters = 15000
+
+// availableOrderLimit caps the result set regardless of radius.
+const availableOrderLimit = 50
 
 // ListAvailableForDrivers returns orders a driver could accept — vendor has
 // confirmed (accepted/preparing) but no driver assigned yet — restricted to
 // callers who are online, active, and phone-verified (blueprint: "only
-// active+verified drivers receive requests"). Read-only: accepting still
-// goes through AssignDriver's concurrency-safe conditional UPDATE.
+// active+verified drivers receive requests"), and to pickups within
+// availableOrderRadiusMeters of the driver's last known position, nearest
+// first. Read-only: accepting still goes through AssignDriver's
+// concurrency-safe conditional UPDATE.
+//
+// A driver who has never reported a position (just came online, GPS not yet
+// fixed) gets the unfiltered list rather than an empty one — showing them
+// nothing would be a worse failure than showing them a distant order.
 func (s *OrderService) ListAvailableForDrivers(ctx context.Context, driverID string) ([]AvailableOrder, *apperror.AppError) {
 	var eligible bool
 	err := s.db.WithContext(ctx).Raw(`
@@ -299,22 +321,56 @@ func (s *OrderService) ListAvailableForDrivers(ctx context.Context, driverID str
 		return []AvailableOrder{}, nil
 	}
 
-	var orders []AvailableOrder
-	err = s.db.WithContext(ctx).Raw(`
+	const selectCols = `
 		SELECT o.id, o.vendor_id,
 		       COALESCE(v.name_i18n->>'en', '') AS vendor_name,
 		       ST_X(v.location::geometry) AS vendor_longitude, ST_Y(v.location::geometry) AS vendor_latitude,
 		       ST_X(o.delivery_point::geometry) AS delivery_longitude, ST_Y(o.delivery_point::geometry) AS delivery_latitude,
-		       o.subtotal_usd, o.placed_at
-		FROM orders o
-		JOIN vendors v ON v.id = o.vendor_id
-		WHERE o.status IN ('accepted', 'preparing') AND o.driver_id IS NULL
-		ORDER BY o.placed_at ASC
-	`).Scan(&orders).Error
+		       o.subtotal_usd, o.placed_at`
+
+	var orders []AvailableOrder
+
+	lon, lat, _, hasPosition, appErr := s.driverPosition(ctx, driverID)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if hasPosition {
+		err = s.db.WithContext(ctx).Raw(selectCols+`,
+			       ST_Distance(v.location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) AS pickup_distance_meters
+			FROM orders o
+			JOIN vendors v ON v.id = o.vendor_id
+			WHERE o.status IN ('accepted', 'preparing') AND o.driver_id IS NULL
+			  AND ST_DWithin(v.location, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)
+			ORDER BY pickup_distance_meters ASC
+			LIMIT ?
+		`, lon, lat, lon, lat, availableOrderRadiusMeters, availableOrderLimit).Scan(&orders).Error
+	} else {
+		err = s.db.WithContext(ctx).Raw(selectCols+`
+			FROM orders o
+			JOIN vendors v ON v.id = o.vendor_id
+			WHERE o.status IN ('accepted', 'preparing') AND o.driver_id IS NULL
+			ORDER BY o.placed_at ASC
+			LIMIT ?
+		`, availableOrderLimit).Scan(&orders).Error
+	}
 	if err != nil {
 		return nil, apperror.Internal(fmt.Errorf("order: list available for drivers: %w", err))
 	}
 	return orders, nil
+}
+
+// driverPosition reads a driver's last known position from driver_locations.
+// found=false simply means they've never reported one.
+func (s *OrderService) driverPosition(ctx context.Context, driverID string) (lon, lat, heading float64, found bool, appErr *apperror.AppError) {
+	row := s.db.WithContext(ctx).Raw(`
+		SELECT ST_X(location::geometry), ST_Y(location::geometry), COALESCE(heading, 0)
+		FROM driver_locations WHERE driver_id = ?
+	`, driverID).Row()
+	if err := row.Scan(&lon, &lat, &heading); err != nil {
+		return 0, 0, 0, false, nil
+	}
+	return lon, lat, heading, true, nil
 }
 
 // ActiveDriverOrder extends models.Order with the vendor identity/pickup

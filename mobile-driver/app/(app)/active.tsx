@@ -1,23 +1,25 @@
 import { Feather } from '@expo/vector-icons'
+import { Camera, GeoJSONSource, Layer, Marker } from '@maplibre/maplibre-react-native'
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import MapView, { Marker } from 'react-native-maps'
+import type { CameraRef } from '@maplibre/maplibre-react-native'
 
 import { EmptyState } from '../../src/components/ui/empty-state'
+import { MapPin } from '../../src/components/map/map-pin'
+import { MapView } from '../../src/components/map/map-view'
 import { useAvailability } from '../../src/features/driver/availability-context'
 import { useActiveOrder } from '../../src/features/driver/use-active-order'
 import { useUpdateOrderStatus } from '../../src/features/driver/use-update-order-status'
-import { useLocationStream } from '../../src/features/tracking/use-location-stream'
+import { startBackgroundTracking, stopBackgroundTracking } from '../../src/features/tracking/location-task'
+import { formatEta, useRoute } from '../../src/features/tracking/use-route'
 import { toApiError } from '../../src/lib/api-client'
 
-// D4 Active Order (blueprint §11.D4): map pickup→dropoff, status actions,
-// and — while status is on_the_way — the open, actively-sending WS
-// connection that makes mobile-user's live-tracking map work. The driver
-// app is the producer for that channel; it only streams while this screen
-// is mounted AND the order is on_the_way (useLocationStream's `active` flag).
+// D4 Active Order (blueprint §11.D4): the pickup→dropoff map, the status
+// actions, and — while the delivery is under way — the background location
+// reporting that makes the customer's live tracking map work.
 export default function ActiveOrderScreen() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -25,10 +27,59 @@ export default function ActiveOrderScreen() {
   const updateStatus = useUpdateOrderStatus()
   const [actionError, setActionError] = useState<string | null>(null)
   const { location: driverLocation } = useAvailability()
+  const cameraRef = useRef<CameraRef>(null)
 
   const isOnTheWay = order?.status === 'on_the_way'
-  const wsStatus = useLocationStream(order?.id, isOnTheWay)
   const hasVendorCoords = order?.vendor_longitude != null && order?.vendor_latitude != null
+
+  const pickup = hasVendorCoords
+    ? { longitude: order.vendor_longitude as number, latitude: order.vendor_latitude as number }
+    : null
+  const dropoff = order ? { longitude: order.delivery_longitude, latitude: order.delivery_latitude } : null
+
+  // Before pickup the driver is heading to the store; after, to the customer.
+  const routeFrom = driverLocation ?? pickup
+  const routeTo = isOnTheWay ? dropoff : pickup
+  const { data: route } = useRoute(routeFrom, routeTo)
+
+  // Report position in the background for the whole delivery leg. This is
+  // what keeps the customer's map alive when the driver locks their screen or
+  // switches apps — the in-app socket used to die there, freezing the marker.
+  useEffect(() => {
+    if (!isOnTheWay) {
+      void stopBackgroundTracking()
+      return
+    }
+    void (async () => {
+      const started = await startBackgroundTracking()
+      if (!started) {
+        setActionError(t('activeOrder.backgroundPermissionDenied'))
+      }
+    })()
+  }, [isOnTheWay, t])
+
+  // Stop reporting if this screen goes away with no delivery in flight (e.g.
+  // logout) — never leave a location task running with nothing to report to.
+  useEffect(() => {
+    return () => {
+      void stopBackgroundTracking()
+    }
+  }, [])
+
+  // Keep every relevant point in view: the driver, the store, the customer.
+  useEffect(() => {
+    const points = [driverLocation, pickup, dropoff].filter((p): p is { longitude: number; latitude: number } => p != null)
+    if (points.length < 2 || !cameraRef.current) {
+      return
+    }
+    const lons = points.map((p) => p.longitude)
+    const lats = points.map((p) => p.latitude)
+    // LngLatBounds is flat [west, south, east, north].
+    cameraRef.current.fitBounds(
+      [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)],
+      { padding: { top: 60, bottom: 60, left: 60, right: 60 }, duration: 600 },
+    )
+  }, [driverLocation?.longitude, driverLocation?.latitude, pickup?.longitude, pickup?.latitude, dropoff?.longitude, dropoff?.latitude])
 
   if (isLoading) {
     return (
@@ -80,6 +131,7 @@ export default function ActiveOrderScreen() {
             { orderId: order.id, status: 'delivered' },
             {
               onSuccess: () => {
+                void stopBackgroundTracking()
                 void queryClient.invalidateQueries({ queryKey: ['driver-available-orders'] })
               },
               onError: (err) => { setActionError(toApiError(err).user_message) },
@@ -90,6 +142,23 @@ export default function ActiveOrderScreen() {
     ])
   }
 
+  // Hand off to the OS maps app for real turn-by-turn. The in-app route line
+  // is for context — it is not navigation, and pretending otherwise would be
+  // worse than sending the driver to a tool built for it.
+  const openNavigation = () => {
+    const target = isOnTheWay ? dropoff : pickup
+    if (!target) return
+    const { latitude, longitude } = target
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.openstreetmap.org/directions?to=${latitude},${longitude}`,
+    })
+    void Linking.openURL(url).catch(() => {
+      setActionError(t('activeOrder.navigationFailed'))
+    })
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       <View className="px-5 py-3 border-b border-gray-100 dark:border-gray-900">
@@ -98,46 +167,65 @@ export default function ActiveOrderScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View className="h-64 w-full bg-gray-100 dark:bg-gray-800 relative">
-          <MapView
-            style={{ width: '100%', height: '100%' }}
-            initialRegion={{
-              latitude: order.delivery_latitude,
-              longitude: order.delivery_longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            }}
-          >
-            {hasVendorCoords ? (
-              <Marker
-                coordinate={{ latitude: order.vendor_latitude as number, longitude: order.vendor_longitude as number }}
-                title={order.vendor_name ?? t('activeOrder.pickup')}
-                pinColor="#ffc20e"
-              />
-            ) : null}
-            <Marker
-              coordinate={{ latitude: order.delivery_latitude, longitude: order.delivery_longitude }}
-              title={t('activeOrder.dropoff')}
-              pinColor="red"
+        <View className="h-72 w-full bg-gray-100 dark:bg-gray-800 relative">
+          <MapView style={{ width: '100%', height: '100%' }}>
+            <Camera
+              ref={cameraRef}
+              initialViewState={{
+                center: [order.delivery_longitude, order.delivery_latitude],
+                zoom: 12,
+              }}
             />
+
+            {route ? (
+              <GeoJSONSource id="route" data={route.geometry}>
+                <Layer
+                  id="route-line"
+                  type="line"
+                  style={{
+                    lineColor: '#2563eb',
+                    lineWidth: 4,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+              </GeoJSONSource>
+            ) : null}
+
+            {pickup ? (
+              <Marker id="pickup" lngLat={[pickup.longitude, pickup.latitude]}>
+                <MapPin kind="pickup" />
+              </Marker>
+            ) : null}
+            {dropoff ? (
+              <Marker id="dropoff" lngLat={[dropoff.longitude, dropoff.latitude]}>
+                <MapPin kind="dropoff" />
+              </Marker>
+            ) : null}
             {driverLocation ? (
-              <Marker
-                coordinate={{ latitude: driverLocation.latitude, longitude: driverLocation.longitude }}
-                title={t('activeOrder.you')}
-                pinColor="#2563eb"
-                rotation={driverLocation.heading ?? 0}
-              />
+              <Marker id="driver" lngLat={[driverLocation.longitude, driverLocation.latitude]}>
+                <MapPin kind="driver" />
+              </Marker>
             ) : null}
           </MapView>
 
-          {isOnTheWay ? (
-            <View className="absolute top-3 start-3 bg-black/60 rounded-full px-3 py-1.5 flex-row items-center gap-1.5">
-              <View className={`size-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'}`} />
-              <Text className="text-[10px] text-white font-bold uppercase">
-                {wsStatus === 'connected' ? t('activeOrder.live') : t('activeOrder.disconnected')}
+          {route ? (
+            <View className="absolute top-3 start-3 bg-black/70 rounded-full px-3 py-1.5">
+              <Text className="text-[11px] text-white font-bold">
+                {isOnTheWay ? t('activeOrder.etaToCustomer') : t('activeOrder.etaToStore')}
+                {': '}
+                {formatEta(route.duration_seconds)}
               </Text>
             </View>
           ) : null}
+
+          <Pressable
+            onPress={openNavigation}
+            className="absolute bottom-3 end-3 flex-row items-center gap-1.5 rounded-full bg-white px-4 py-2.5 shadow-lg active:opacity-80 dark:bg-gray-900"
+          >
+            <Feather name="navigation" size={14} color="#2563eb" />
+            <Text className="text-xs font-bold text-blue-600">{t('activeOrder.navigate')}</Text>
+          </Pressable>
         </View>
 
         <View className="mx-4 my-4 bg-white dark:bg-gray-900 rounded-3xl p-5 gap-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}>

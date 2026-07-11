@@ -76,6 +76,50 @@ func (h *WSHandler) IssueTicket(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"data": echo.Map{"ticket": ticket}})
 }
 
+// DriverLocation handles GET /api/v1/orders/:orderId/driver-location
+// (authed). Returns the assigned driver's LAST KNOWN position so a client
+// opening the tracking map can render the marker immediately, instead of
+// staring at an empty map until the next WebSocket frame arrives — which
+// may be seconds away, or never if the driver's app is backgrounded.
+// Access is gated by the same ownership check as the WS room, so only the
+// order's customer, its driver, or its vendor owner can read it.
+func (h *WSHandler) DriverLocation(c echo.Context) error {
+	userID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+	role, _ := appmw.Role(c)
+
+	orderID := c.Param("orderId")
+	if appErr := h.locations.AssertOrderAccess(c.Request().Context(), orderID, userID, role); appErr != nil {
+		return appErr
+	}
+
+	driverID, appErr := h.locations.DriverForOrder(c.Request().Context(), orderID)
+	if appErr != nil {
+		return appErr
+	}
+	if driverID == "" {
+		// No driver assigned yet — a normal state, not an error.
+		return c.JSON(http.StatusOK, echo.Map{"data": nil})
+	}
+
+	lon, lat, heading, found, appErr := h.locations.GetCurrent(c.Request().Context(), driverID)
+	if appErr != nil {
+		return appErr
+	}
+	if !found {
+		// Driver assigned but has never reported a position.
+		return c.JSON(http.StatusOK, echo.Map{"data": nil})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"data": echo.Map{
+		"longitude": lon,
+		"latitude":  lat,
+		"heading":   heading,
+	}})
+}
+
 // TrackOrder handles GET /api/v1/ws/orders/:orderId/track — the live
 // tracking WebSocket (blueprint §4.9, §11.C10/D4). Authenticated via a
 // one-time ticket (see IssueTicket) passed as a query parameter —
@@ -109,21 +153,86 @@ func (h *WSHandler) TrackOrder(c echo.Context) error {
 
 	go client.WritePump()
 	client.ReadPump(func(lon, lat, heading float64) {
-		ctx := context.Background()
-		if appErr := h.locations.Upsert(ctx, userID, lon, lat, heading); appErr != nil {
-			return
-		}
-		payload, marshalErr := json.Marshal(map[string]any{
-			"type":      "driver_location",
-			"longitude": lon,
-			"latitude":  lat,
-			"heading":   heading,
-		})
-		if marshalErr != nil {
-			return
-		}
-		_ = h.hub.Broadcast(ctx, orderID, payload)
+		_ = h.publishDriverLocation(context.Background(), orderID, userID, lon, lat, heading)
 	})
 
 	return nil
+}
+
+// publishDriverLocation persists a driver's position and fans it out to the
+// order's tracking room. Shared by both producers of location data: the
+// WebSocket (used while the driver app is in the foreground) and
+// ReportLocation below (used by the background task, which has no socket).
+func (h *WSHandler) publishDriverLocation(ctx context.Context, orderID, driverID string, lon, lat, heading float64) *apperror.AppError {
+	if appErr := h.locations.Upsert(ctx, driverID, lon, lat, heading); appErr != nil {
+		return appErr
+	}
+	payload, err := json.Marshal(map[string]any{
+		"type":      "driver_location",
+		"longitude": lon,
+		"latitude":  lat,
+		"heading":   heading,
+	})
+	if err != nil {
+		return apperror.Internal(err)
+	}
+	// A failed broadcast is not worth failing the caller over — the position
+	// is already persisted, so the next reader still gets it via
+	// GET /orders/:orderId/driver-location.
+	_ = h.hub.Broadcast(ctx, orderID, payload)
+	return nil
+}
+
+type reportLocationRequest struct {
+	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`
+	Heading   float64 `json:"heading"`
+}
+
+// ReportLocation handles POST /api/v1/driver/location (driver-authed).
+//
+// This is the background-tracking path: once the driver app is backgrounded
+// its WebSocket dies with the React tree, and a headless location task has
+// no socket to write to — so it POSTs here instead and the server does the
+// room broadcast on its behalf. Without this, the customer's tracking map
+// freezes the moment the driver switches apps.
+//
+// The order is resolved server-side from the driver's own active order —
+// never taken from the request — so a driver can only ever publish into a
+// room they are actually assigned to.
+func (h *WSHandler) ReportLocation(c echo.Context) error {
+	driverID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+
+	var req reportLocationRequest
+	if err := c.Bind(&req); err != nil {
+		return apperror.BadRequest("invalid request body")
+	}
+	if req.Longitude < -180 || req.Longitude > 180 {
+		return apperror.Validation("longitude is out of range")
+	}
+	if req.Latitude < -90 || req.Latitude > 90 {
+		return apperror.Validation("latitude is out of range")
+	}
+
+	ctx := c.Request().Context()
+	orderID, appErr := h.locations.ActiveOrderForDriver(ctx, driverID)
+	if appErr != nil {
+		return appErr
+	}
+	if orderID == "" {
+		// No delivery in flight: still record the position (it feeds the
+		// nearby-orders match), but there is no room to broadcast into.
+		if appErr := h.locations.Upsert(ctx, driverID, req.Longitude, req.Latitude, req.Heading); appErr != nil {
+			return appErr
+		}
+		return c.NoContent(http.StatusNoContent)
+	}
+
+	if appErr := h.publishDriverLocation(ctx, orderID, driverID, req.Longitude, req.Latitude, req.Heading); appErr != nil {
+		return appErr
+	}
+	return c.NoContent(http.StatusNoContent)
 }

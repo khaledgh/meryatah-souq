@@ -155,12 +155,19 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 12 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}
           renderItem={({ item }) => {
-            const distanceKm = location
-              ? haversineKm(
-                  { latitude: location.latitude, longitude: location.longitude },
-                  { latitude: item.vendor_latitude, longitude: item.vendor_longitude },
-                )
-              : null
+            // Prefer the server's PostGIS distance (it also drove the radius
+            // filter, so it's the same number the match was made on). It's 0
+            // when the server had no position for this driver yet — only then
+            // fall back to computing it here from the live GPS fix.
+            const distanceKm =
+              item.pickup_distance_meters > 0
+                ? item.pickup_distance_meters / 1000
+                : location
+                  ? haversineKm(
+                      { latitude: location.latitude, longitude: location.longitude },
+                      { latitude: item.vendor_latitude, longitude: item.vendor_longitude },
+                    )
+                  : null
             return (
               <Card>
                 <View className="flex-row items-start justify-between mb-2">

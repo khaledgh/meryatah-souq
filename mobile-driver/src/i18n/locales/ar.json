@@ -42,7 +42,8 @@
     "password": "كلمة المرور",
     "createAccount": "إنشاء حساب",
     "notADriver": "هذا الحساب غير مسجل كسائق.",
-    "notADriverDesc": "يرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ."
+    "notADriverDesc": "يرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+    "noDriverAccountDesc": "لا يوجد حساب سائق لهذا الرقم. يرجى التواصل مع الدعم لتسجيلك كسائق."
   },
   "nav": {
     "home": "الرئيسية",
@@ -94,7 +95,12 @@
     "confirmDeliveredTitle": "تأكيد التسليم",
     "confirmDeliveredMsg": "هل تريد تعليم هذا الطلب كمسلَّم؟",
     "payout": "العائد",
-    "you": "أنت"
+    "you": "أنت",
+    "navigate": "الملاحة",
+    "navigationFailed": "تعذر فتح تطبيق الملاحة.",
+    "etaToStore": "إلى المتجر",
+    "etaToCustomer": "إلى الزبون",
+    "backgroundPermissionDenied": "اسمح بالوصول إلى الموقع «دائماً» ليتمكن الزبائن من تتبع التوصيل حتى عندما يكون التطبيق مغلقاً."
   },
   "orders": {
     "status": {

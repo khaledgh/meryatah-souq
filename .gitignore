@@ -13,6 +13,17 @@ build/
 .expo-shared/
 *.tsbuildinfo
 
+# Native projects are generated from app.json by `npx expo prebuild` (CNG) —
+# app.json is the source of truth, so these must not be committed or they go
+# stale and silently stop picking up plugin/permission changes.
+/mobile-user/android/
+/mobile-user/ios/
+/mobile-driver/android/
+/mobile-driver/ios/
+
+# OSRM routing graph (built locally from a Geofabrik extract — see docs/OSRM.md)
+/osrm-data/
+
 # Env
 .env
 .env.local

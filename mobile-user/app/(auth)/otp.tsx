@@ -38,8 +38,10 @@ export default function OtpScreen() {
       const result = await verifyOtp(phone, code)
       if (result.kind === 'login') {
         router.replace('/home')
-      } else {
+      } else if (result.kind === 'register_required') {
         router.replace({ pathname: '/(auth)/register', params: { token: result.verificationToken } })
+      } else {
+        setError(t('auth.notAUserDesc'))
       }
     } catch (err) {
       setError(toApiError(err).user_message)

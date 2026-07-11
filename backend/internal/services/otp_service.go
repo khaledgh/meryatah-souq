@@ -216,6 +216,19 @@ func (s *OTPService) VerifyOTP(ctx context.Context, phoneE164, code string) (*Ve
 	}
 	s.redis.Del(ctx, redisKey)
 
+	// Possession of the phone is now actually proven, so record it. Until
+	// this existed, phone_verified was hardcoded true at account creation
+	// and never derived from a real verification — yet the driver
+	// eligibility check (order_status_service.go) reads it as if it meant
+	// something. A no-op for a phone with no account yet (the registration
+	// path sets it on create), so the failure mode is benign either way and
+	// must not fail the verification the user just completed successfully.
+	if err := s.db.WithContext(ctx).Table("users").
+		Where("phone = ? AND phone_verified = false", phoneE164).
+		Update("phone_verified", true).Error; err != nil {
+		log.Printf("otp: verify: could not set phone_verified for %s: %v", phoneE164, err)
+	}
+
 	var user models.User
 	err = s.db.WithContext(ctx).Where("phone = ?", phoneE164).First(&user).Error
 	switch {

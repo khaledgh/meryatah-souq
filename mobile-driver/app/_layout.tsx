@@ -14,6 +14,11 @@ import { AuthProvider } from '../src/features/auth/auth-context'
 import { AvailabilityProvider } from '../src/features/driver/availability-context'
 import '../src/i18n/config'
 import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
+// Side-effect import: registers the background location task at module load.
+// The OS can relaunch this app headlessly to deliver a location fix, so the
+// task must already be defined by the time that happens — it cannot be
+// registered from inside a component.
+import '../src/features/tracking/location-task'
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,

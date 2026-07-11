@@ -12,10 +12,16 @@ import { toApiError } from '../../src/lib/api-client'
 const RESEND_SECONDS = 30
 
 // Blueprint §11.D1: OTP Verify. On a `login` result routes to the driver
-// dashboard; on `register_required` routes to registration; on
-// `not_a_driver` fails fast with a clear, non-silent error (per the task's
-// "role must be driver" rule) instead of proceeding into a dashboard that
-// would 403 on every call.
+// dashboard. Both other outcomes are dead ends by design, shown as a clear
+// error rather than a silent failure:
+//   - `not_a_driver`      — the phone has an account, but not a driver one;
+//                           every /driver/* call would 403.
+//   - `register_required` — the phone has no account at all. There is no
+//                           self-registration for drivers: POST
+//                           /auth/complete-registration hardcodes the `user`
+//                           role, so registering here would mint an account
+//                           that can never use this app. Drivers are
+//                           provisioned by an admin (blueprint §11.A6).
 export default function OtpScreen() {
   const { t } = useTranslation()
   const { phone } = useLocalSearchParams<{ phone: string }>()
@@ -41,7 +47,7 @@ export default function OtpScreen() {
       if (result.kind === 'login') {
         router.replace('/(app)/home')
       } else if (result.kind === 'register_required') {
-        router.replace({ pathname: '/(auth)/register', params: { token: result.verificationToken } })
+        setError(t('auth.noDriverAccountDesc'))
       } else {
         setError(t('auth.notADriverDesc'))
       }

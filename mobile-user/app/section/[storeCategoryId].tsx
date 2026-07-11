@@ -4,15 +4,13 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { useNearbyVendors, type Coordinates, type VendorWithStatus } from '../../src/features/home/use-nearby-vendors'
+import { useNearbyVendors, type VendorWithStatus } from '../../src/features/home/use-nearby-vendors'
+import { useUserLocation } from '../../src/features/location/use-user-location'
 import { useStoreCategories } from '../../src/features/home/use-store-categories'
 import { storeCategoryDisplayName, type StoreCategory } from '../../src/schemas/store-category'
 import { vendorDisplayName } from '../../src/schemas/vendor'
 import { ThemeProvider, useTheme } from '../../src/theme/theme-context'
 
-// Same hardcoded default as the home screen — a real "user location" task
-// is tracked separately; both screens share this fallback until then.
-const DEFAULT_LOCATION: Coordinates = { longitude: 35.5018, latitude: 33.8938 }
 
 // A marketplace section's landing page: entering a store category (Food,
 // Electronics, Market, ...) applies that section's accent + template
@@ -36,7 +34,8 @@ function SectionContent({ storeCategoryId, category }: { storeCategoryId: string
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const theme = useTheme()
-  const nearby = useNearbyVendors(DEFAULT_LOCATION, storeCategoryId)
+  const { location } = useUserLocation()
+  const nearby = useNearbyVendors(location, storeCategoryId)
   const categoryName = category ? storeCategoryDisplayName(category, i18n.language) : undefined
 
   return (

@@ -38,6 +38,12 @@ type Config struct {
 	OneSignalAppID  string
 	OneSignalAPIKey string
 
+	// OSRMURL is the routing engine used for driver route geometry + ETA
+	// (self-hosted; the public demo server forbids commercial use). Routes
+	// are proxied through this backend rather than called from the apps, so
+	// the engine stays swappable and responses can be cached.
+	OSRMURL string
+
 	StorageDriver string
 	MediaLocalDir string
 	// MediaBaseURL is the external ORIGIN that serves locally-stored media —
@@ -88,6 +94,8 @@ func Load() (*Config, error) {
 
 		OneSignalAppID:  os.Getenv("ONESIGNAL_APP_ID"),
 		OneSignalAPIKey: os.Getenv("ONESIGNAL_API_KEY"),
+
+		OSRMURL: getEnv("OSRM_URL", "http://localhost:5000"),
 
 		StorageDriver: getEnv("STORAGE_DRIVER", "local"),
 		MediaLocalDir: getEnv("MEDIA_LOCAL_DIR", "./media"),

@@ -16,14 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Carousel } from '../../../src/components/ui/carousel'
 import { SearchBar } from '../../../src/components/ui/search-bar'
 import { useBannerAds } from '../../../src/features/home/use-banner-ads'
-import { useNearbyVendors, type Coordinates, type VendorWithStatus } from '../../../src/features/home/use-nearby-vendors'
+import { useNearbyVendors, type VendorWithStatus } from '../../../src/features/home/use-nearby-vendors'
 import { useStoreCategories } from '../../../src/features/home/use-store-categories'
 import { resolveMediaUrl } from '../../../src/lib/media'
 import { storeCategoryDisplayName, type StoreCategory } from '../../../src/schemas/store-category'
 import { vendorDisplayName } from '../../../src/schemas/vendor'
 import { useAuth } from '../../../src/features/auth/auth-context'
-
-const DEFAULT_LOCATION: Coordinates = { longitude: 35.5018, latitude: 33.8938 }
+import { useUserLocation } from '../../../src/features/location/use-user-location'
 
 const ACCENT = '#ffc20e'
 const TEXT_DARK = '#111827'
@@ -37,7 +36,8 @@ export default function HomeScreen() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
 
-  const nearby = useNearbyVendors(DEFAULT_LOCATION)
+  const { location } = useUserLocation()
+  const nearby = useNearbyVendors(location)
   const bannerAds = useBannerAds()
   const storeCategories = useStoreCategories()
 

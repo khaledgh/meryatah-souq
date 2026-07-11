@@ -1,0 +1,17 @@
+# OPTIONAL convenience only (blueprint §17) — never the primary run path.
+#
+# OSRM is the road-routing engine behind GET /api/v1/route (driver route
+# geometry + ETA). It is self-hosted because the public demo server
+# (router.project-osrm.org) explicitly forbids commercial use and offers no
+# availability guarantee.
+#
+# Before first `docker compose up`, build the routing graph — see docs/OSRM.md.
+services:
+  osrm:
+    image: osrm/osrm-backend
+    command: osrm-routed --algorithm mld /data/lebanon-latest.osrm
+    volumes:
+      - ./osrm-data:/data
+    ports:
+      - "5000:5000"
+    restart: unless-stopped

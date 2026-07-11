@@ -73,8 +73,9 @@ func main() {
 	i18nService := i18n.NewService(db, cache)
 	settingsService := services.NewSettingsService(db, cache)
 
+	smsLogService := services.NewSMSLogService(db)
 	otpRegistry := otp.NewRegistry(
-		otp.NewSMSProvider(cfg.SMSUsername, cfg.SMSPassword, cfg.SMSSenderID),
+		otp.NewSMSProvider(cfg.SMSUsername, cfg.SMSPassword, cfg.SMSSenderID, smsLogService),
 		otp.NewWhatsAppProvider(cfg.WhatsAppAPIKey),
 	)
 	otpService := services.NewOTPService(db, redisClient, cache, otpRegistry)
@@ -269,6 +270,17 @@ func main() {
 	wsHandler := handlers.NewWSHandler(hub, driverLocationService, wsTicketService, cfg.CORSOrigins)
 	v1.POST("/ws/ticket", wsHandler.IssueTicket, requireAuth)
 	v1.GET("/ws/orders/:orderId/track", wsHandler.TrackOrder)
+	// Last-known driver position, so a client opening the tracking map isn't
+	// blank until the first WS frame lands.
+	v1.GET("/orders/:orderId/driver-location", wsHandler.DriverLocation, requireAuth)
+	// Background location reports: once the driver app is backgrounded its
+	// WebSocket dies with the React tree, so the headless location task POSTs
+	// here and the server does the room broadcast instead.
+	driverGroup.POST("/location", wsHandler.ReportLocation)
+
+	routingService := services.NewRoutingService(cfg.OSRMURL, redisClient)
+	routingHandler := handlers.NewRoutingHandler(routingService)
+	v1.GET("/route", routingHandler.Route, requireAuth)
 
 	bannerAdService := services.NewBannerAdService(db, cache, storageRegistry)
 	bannerAdHandler := handlers.NewBannerAdHandler(bannerAdService)

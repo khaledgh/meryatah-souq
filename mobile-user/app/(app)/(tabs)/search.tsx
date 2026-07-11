@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { SearchBar } from '../../../src/components/ui/search-bar'
-import { useNearbyVendors, type Coordinates } from '../../../src/features/home/use-nearby-vendors'
+import { useNearbyVendors } from '../../../src/features/home/use-nearby-vendors'
+import { useUserLocation } from '../../../src/features/location/use-user-location'
 import { vendorDisplayName } from '../../../src/schemas/vendor'
-
-const DEFAULT_LOCATION: Coordinates = { longitude: 35.5018, latitude: 33.8938 }
 
 export default function SearchScreen() {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const nearby = useNearbyVendors(DEFAULT_LOCATION)
+  const { location } = useUserLocation()
+  const nearby = useNearbyVendors(location)
 
   const results = (nearby.data ?? []).filter((v) => {
     if (!query.trim()) return false

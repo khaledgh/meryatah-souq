@@ -36,8 +36,8 @@ type Order struct {
 	// read time, matching the Vendor.Longitude/Latitude pattern (real
 	// column tags, never gorm:"-", since Phase 5 established that gorm:"-"
 	// silently breaks GORM's raw-SQL Scan destination mapping).
-	DeliveryLongitude float64 `gorm:"column:delivery_longitude" json:"delivery_longitude"`
-	DeliveryLatitude  float64 `gorm:"column:delivery_latitude" json:"delivery_latitude"`
+	DeliveryLongitude float64     `gorm:"column:delivery_longitude" json:"delivery_longitude"`
+	DeliveryLatitude  float64     `gorm:"column:delivery_latitude" json:"delivery_latitude"`
 	Items             []OrderItem `gorm:"-" json:"items,omitempty"`
 }
 

@@ -4,13 +4,18 @@ import { apiClient } from '../../lib/api-client'
 import { clearSession, getRefreshToken, setAccessToken, setRefreshToken } from '../../lib/auth-storage'
 import { authResponseSchema, verifyOtpResponseSchema, type AuthUser } from '../../schemas/auth'
 
-// The result of verifying an OTP: either the user is now logged in, is new
-// (registration required), or is logged in but not a driver — the driver
-// app must fail fast and clearly here rather than silently proceeding,
-// since backend's requireDriver middleware would 403 every subsequent call.
+// The result of verifying an OTP. Both non-login outcomes are dead ends for
+// this app (see app/(auth)/otp.tsx):
+//   - not_a_driver      — account exists but isn't a driver; every /driver/*
+//                         call would 403, so fail fast rather than proceed.
+//   - register_required — no account at all. There is no driver
+//                         self-registration: /auth/complete-registration
+//                         hardcodes the `user` role, so it could only mint an
+//                         account that can never use this app. Drivers are
+//                         provisioned by an admin (blueprint §11.A6).
 type VerifyResult =
   | { kind: 'login' }
-  | { kind: 'register_required'; verificationToken: string }
+  | { kind: 'register_required' }
   | { kind: 'not_a_driver' }
 
 interface AuthContextValue {
@@ -19,16 +24,7 @@ interface AuthContextValue {
   isInitializing: boolean
   requestOtp: (phone: string) => Promise<void>
   verifyOtp: (phone: string, code: string) => Promise<VerifyResult>
-  completeRegistration: (input: CompleteRegistrationInput) => Promise<void>
   logout: () => Promise<void>
-}
-
-interface CompleteRegistrationInput {
-  verificationToken: string
-  firstName: string
-  lastName: string
-  password: string
-  preferredLocale: string
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -37,11 +33,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isInitializing, setIsInitializing] = useState<boolean>(true)
 
-  // No silent-session-restore across app restarts beyond the refresh token
-  // itself (access token is memory-only by design, §5.1); we just need to
-  // know when startup bookkeeping is done so index.tsx can redirect.
+  // Restore the session on cold start. The access token is memory-only
+  // (§5.1) and so is always gone after a restart, but the refresh token
+  // persists in the OS keychain — /auth/refresh trades it for a fresh pair
+  // AND returns the full user payload, so this one call re-establishes
+  // everything. Without it the app would bounce every returning driver to
+  // the OTP screen despite holding a perfectly valid credential.
   useEffect(() => {
-    void getRefreshToken().then(() => { setIsInitializing(false) })
+    void (async () => {
+      const refreshToken = await getRefreshToken()
+      if (!refreshToken) {
+        setIsInitializing(false)
+        return
+      }
+      try {
+        const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
+        const parsed = authResponseSchema.parse(response.data)
+        // Same guard as verifyOtp: never hold a session for a non-driver.
+        if (parsed.user.role !== 'driver') {
+          await clearSession()
+          return
+        }
+        setAccessToken(parsed.access_token)
+        await setRefreshToken(parsed.refresh_token)
+        setUser(parsed.user)
+      } catch {
+        // Expired/revoked/reused refresh token — drop it and start clean.
+        await clearSession()
+      } finally {
+        setIsInitializing(false)
+      }
+    })()
   }, [])
 
   const requestOtp = useCallback(async (phone: string) => {
@@ -54,8 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (parsed.status === 'login' && parsed.access_token && parsed.refresh_token && parsed.user) {
       if (parsed.user.role !== 'driver') {
-        // Do not persist any session for a non-driver account — fail fast,
-        // per the driver app's "must be authenticated as a driver" rule.
+        // Do not persist any session for a non-driver account.
         return { kind: 'not_a_driver' }
       }
       setAccessToken(parsed.access_token)
@@ -63,27 +84,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(parsed.user)
       return { kind: 'login' }
     }
-    if (parsed.status === 'register_required' && parsed.verification_token) {
-      return { kind: 'register_required', verificationToken: parsed.verification_token }
+    if (parsed.status === 'register_required') {
+      return { kind: 'register_required' }
     }
     throw new Error('unexpected verify-otp response')
   }, [])
 
-  const completeRegistration = useCallback(async (input: CompleteRegistrationInput) => {
-    const response = await apiClient.post<unknown>('/auth/complete-registration', {
-      verification_token: input.verificationToken,
-      first_name: input.firstName,
-      last_name: input.lastName,
-      password: input.password,
-      preferred_locale: input.preferredLocale,
-    })
-    const parsed = authResponseSchema.parse(response.data)
-    setAccessToken(parsed.access_token)
-    await setRefreshToken(parsed.refresh_token)
-    setUser(parsed.user)
-  }, [])
-
   const logout = useCallback(async () => {
+    // Revoke server-side first: clearing only local storage would leave the
+    // refresh token valid for its full (now year-long) TTL, so a leaked copy
+    // would outlive the "logout" entirely. Best-effort — a failed call must
+    // still clear the local session.
+    const refreshToken = await getRefreshToken()
+    if (refreshToken) {
+      try {
+        await apiClient.post('/auth/logout', { refresh_token: refreshToken })
+      } catch {
+        // Offline or already-invalid token — proceed with the local clear.
+      }
+    }
     await clearSession()
     setUser(null)
   }, [])
@@ -95,10 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       requestOtp,
       verifyOtp,
-      completeRegistration,
       logout,
     }),
-    [user, isInitializing, requestOtp, verifyOtp, completeRegistration, logout],
+    [user, isInitializing, requestOtp, verifyOtp, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

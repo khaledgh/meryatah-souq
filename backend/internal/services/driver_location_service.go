@@ -47,6 +47,41 @@ func (s *DriverLocationService) GetCurrent(ctx context.Context, driverID string)
 	return longitude, latitude, heading, found, nil
 }
 
+// ActiveOrderForDriver returns the order a driver is currently delivering,
+// or "" if they have none in flight (a normal state, not an error). This is
+// how the background-location endpoint resolves which tracking room to
+// broadcast into WITHOUT trusting an order ID supplied by the client — a
+// driver can only ever publish into a room they're actually assigned to
+// (blueprint §5.3).
+func (s *DriverLocationService) ActiveOrderForDriver(ctx context.Context, driverID string) (string, *apperror.AppError) {
+	var orderID string
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT id FROM orders
+		WHERE driver_id = ? AND status IN ('accepted', 'preparing', 'on_the_way')
+		ORDER BY placed_at DESC LIMIT 1
+	`, driverID).Scan(&orderID).Error
+	if err != nil {
+		return "", apperror.Internal(fmt.Errorf("driver_location: active order for driver: %w", err))
+	}
+	return orderID, nil
+}
+
+// DriverForOrder returns the driver assigned to an order, or "" if none has
+// accepted it yet (a normal state, not an error). Callers must have already
+// authorized access to the order via AssertOrderAccess.
+func (s *DriverLocationService) DriverForOrder(ctx context.Context, orderID string) (string, *apperror.AppError) {
+	var driverID *string
+	err := s.db.WithContext(ctx).Raw(`SELECT driver_id FROM orders WHERE id = ?`, orderID).
+		Row().Scan(&driverID)
+	if err != nil {
+		return "", apperror.NotFound("order")
+	}
+	if driverID == nil {
+		return "", nil
+	}
+	return *driverID, nil
+}
+
 // AssertOrderAccess confirms userID (as the given role: "user" or
 // "driver") is a legitimate participant in orderID's tracking room
 // (blueprint §5.3: never trust a client-asserted room membership) —

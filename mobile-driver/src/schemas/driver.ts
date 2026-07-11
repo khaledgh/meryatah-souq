@@ -13,6 +13,11 @@ export const availableOrderSchema = z.object({
   delivery_latitude: z.number(),
   subtotal_usd: z.number(),
   placed_at: z.string(),
+  // Geodesic metres from the driver's last known position to the pickup,
+  // computed server-side (PostGIS ST_Distance). 0 when the server had no
+  // recorded position for the driver — the client falls back to its own
+  // haversine in that case rather than showing "0 km away".
+  pickup_distance_meters: z.number(),
 })
 
 export const availableOrderListSchema = z.object({

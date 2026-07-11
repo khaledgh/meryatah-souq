@@ -12,16 +12,29 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.meryatasouq.user"
+      "bundleIdentifier": "com.meryatasouq.user",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Meryata Souq uses your location to show nearby stores and to set an accurate delivery address."
+      }
     },
     "android": {
-      "package": "com.meryatasouq.user"
+      "package": "com.meryatasouq.user",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-localization",
       "expo-secure-store",
       "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Meryata Souq uses your location to show nearby stores and to set an accurate delivery address."
+        }
+      ],
       [
         "expo-font",
         {
@@ -31,7 +44,8 @@
           ]
         }
       ],
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "@maplibre/maplibre-react-native"
     ],
     "experiments": {
       "typedRoutes": true

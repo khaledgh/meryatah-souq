@@ -17,6 +17,16 @@ import (
 // CURLOPT_SSL_VERIFYPEER=false.
 const upsilonSMSURL = "https://smsapi.upsilonlb.com/"
 
+// SMSLogger records what was actually dispatched to the gateway (migration
+// 000011 sms_logs). Kept as an interface here so this package stays a pure
+// gateway client with no database dependency; services wires the concrete
+// implementation in. Implementations must never block the send path for
+// long and must swallow their own errors — a failure to write the audit
+// row must not fail an OTP the user is waiting on.
+type SMSLogger interface {
+	LogSMS(ctx context.Context, phone, provider, message string, success bool, gatewayResponse, sendErr string)
+}
+
 // SMSProvider sends OTP codes via the Upsilon SMS gateway. Credentials come
 // from SMS_USERNAME/SMS_PASSWORD/SMS_SENDER_ID (blueprint §5: no secret
 // hardcoded in source) — never logged, since apperror.Internal's cause is
@@ -27,14 +37,16 @@ type SMSProvider struct {
 	password string
 	senderID string
 	client   *http.Client
+	logger   SMSLogger // optional; nil disables the audit trail
 }
 
-func NewSMSProvider(username, password, senderID string) *SMSProvider {
+func NewSMSProvider(username, password, senderID string, logger SMSLogger) *SMSProvider {
 	return &SMSProvider{
 		username: username,
 		password: password,
 		senderID: senderID,
 		client:   &http.Client{Timeout: 10 * time.Second},
+		logger:   logger,
 	}
 }
 
@@ -47,7 +59,25 @@ type upsilonResponse struct {
 	Response []string `json:"Response"`
 }
 
-func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) error {
+// Send dispatches the code and records the attempt via SMSLogger. Every
+// return path is audited (via the deferred write on the named return), so a
+// silent non-delivery — the failure mode that made "the code never arrived"
+// undiagnosable before this — always leaves a row behind.
+func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) (err error) {
+	message := fmt.Sprintf("Your Meryata Souq verification code is %s", code)
+	var gatewayResponse string
+
+	defer func() {
+		if p.logger == nil {
+			return
+		}
+		sendErr := ""
+		if err != nil {
+			sendErr = err.Error()
+		}
+		p.logger.LogSMS(ctx, phoneE164, p.Name(), message, err == nil, gatewayResponse, sendErr)
+	}()
+
 	if p.username == "" || p.password == "" {
 		return fmt.Errorf("otp: sms provider not configured (SMS_USERNAME/SMS_PASSWORD unset)")
 	}
@@ -61,7 +91,7 @@ func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) error {
 		"user":       {p.username},
 		"pass":       {p.password},
 		"mno":        {mno},
-		"text":       {fmt.Sprintf("Your Meryata Souq verification code is %s", code)},
+		"text":       {message},
 		"respformat": {"json"},
 	}
 	if p.senderID != "" {
@@ -83,17 +113,19 @@ func (p *SMSProvider) Send(ctx context.Context, phoneE164, code string) error {
 	if err != nil {
 		return fmt.Errorf("otp: sms provider: read response: %w", err)
 	}
+	gatewayResponse = string(body)
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("otp: sms provider: gateway returned status %d", resp.StatusCode)
 	}
 
 	var parsed upsilonResponse
-	if err := json.Unmarshal(body, &parsed); err != nil {
+	if jsonErr := json.Unmarshal(body, &parsed); jsonErr != nil {
 		// The gateway's error responses aren't always valid JSON in every
 		// failure mode observed from the legacy integration — fall back to
 		// a raw substring check rather than treating an unparsable body as
 		// success.
-		if strings.Contains(strings.ToUpper(string(body)), "ERROR") {
+		if strings.Contains(strings.ToUpper(gatewayResponse), "ERROR") {
 			return fmt.Errorf("otp: sms provider: gateway rejected the message")
 		}
 		return fmt.Errorf("otp: sms provider: unexpected response format")

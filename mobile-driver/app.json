@@ -14,6 +14,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.meryatasouq.driver",
       "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ],
         "NSLocationWhenInUseUsageDescription": "Meryata Souq Driver needs your location to show you nearby delivery requests and to share your live position with customers while you're delivering an order.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Meryata Souq Driver needs your location to share your live position with customers while you're on the way to deliver an order."
       }
@@ -22,7 +25,10 @@
       "package": "com.meryatasouq.driver",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
@@ -30,10 +36,16 @@
       "expo-localization",
       "expo-secure-store",
       "expo-asset",
+      "expo-task-manager",
+      "@maplibre/maplibre-react-native",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Meryata Souq Driver needs your location to show nearby delivery requests and share your live position with customers while delivering."
+          "locationWhenInUsePermission": "Meryata Souq Driver needs your location to show nearby delivery requests and share your live position with customers while delivering.",
+          "locationAlwaysAndWhenInUsePermission": "Meryata Souq Driver needs your location in the background so customers can keep tracking your delivery even when the app isn't open.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

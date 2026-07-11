@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Animated, View } from 'react-native'
+import { Animated, View, type DimensionValue } from 'react-native'
 
 interface SkeletonProps {
-  width?: number | string
-  height?: number | string
+  width?: DimensionValue
+  height?: DimensionValue
   borderRadius?: number
   className?: string
 }
@@ -39,8 +39,8 @@ export function Skeleton({
   return (
     <Animated.View
       style={{
-        width: width as any,
-        height: height as any,
+        width,
+        height,
         borderRadius,
         opacity,
       }}
