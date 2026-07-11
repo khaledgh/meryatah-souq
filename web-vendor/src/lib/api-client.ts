@@ -45,40 +45,72 @@ export function toApiError(error: unknown): ApiError['error'] {
   }
 }
 
-let refreshPromise: Promise<string | null> | null = null
+// The refresh token is single-use: the backend rotates it and revokes the
+// old one, and presenting an ALREADY-REVOKED token is treated as theft — it
+// revokes every session the user has (auth_service.go's reuse detection).
+//
+// So every refresh in this app MUST go through this one mutex. Two callers
+// racing with the same token would otherwise look exactly like a stolen
+// token and log the vendor out for good. That is not hypothetical: on a page
+// load, the session restore in auth-context and the first data query's 401
+// fire at the same moment, and before this was shared they each spent the
+// same token.
+let refreshPromise: Promise<RefreshResult | null> | null = null
 
-async function refreshAccessToken(): Promise<string | null> {
+export interface RefreshResult {
+  accessToken: string
+  /** The full user payload /auth/refresh returns, so a caller restoring a
+   *  session doesn't need a second round trip to learn who they are. */
+  user: unknown
+}
+
+async function doRefresh(): Promise<RefreshResult | null> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) return null
 
   try {
+    // The tokens come back FLAT, not wrapped in a `data` envelope (see
+    // handlers/auth.go Refresh -> verifyOTPResponse). Reading response.data.data
+    // here previously threw on every refresh, so this path silently logged the
+    // vendor out instead of renewing their session.
     const response = await axios.post<{
-      data: { access_token: string; refresh_token: string }
+      access_token: string
+      refresh_token: string
+      user: unknown
     }>(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken })
-    const { access_token, refresh_token } = response.data.data
+    const { access_token, refresh_token, user } = response.data
     setAccessToken(access_token)
     setRefreshToken(refresh_token)
-    return access_token
+    return { accessToken: access_token, user }
   } catch {
+    // Expired, revoked, or already used — the session is unrecoverable.
     clearSession()
     return null
   }
+}
+
+// refreshSession is the ONLY way to refresh. Concurrent callers share one
+// in-flight request rather than each spending the (single-use) token.
+export function refreshSession(): Promise<RefreshResult | null> {
+  refreshPromise ??= doRefresh().finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
 }
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined
-    if (error.response?.status === 401 && original && !original._retried) {
+    // Never try to refresh a failed refresh — that would spend the token a
+    // second time, which is precisely what trips reuse detection.
+    const isRefreshCall = original?.url?.includes('/auth/refresh') ?? false
+
+    if (error.response?.status === 401 && original && !original._retried && !isRefreshCall) {
       original._retried = true
-      // De-duplicate concurrent 401s into a single refresh call, not one
-      // per failed request.
-      refreshPromise ??= refreshAccessToken().finally(() => {
-        refreshPromise = null
-      })
-      const newToken = await refreshPromise
-      if (newToken) {
-        original.headers.set('Authorization', `Bearer ${newToken}`)
+      const refreshed = await refreshSession()
+      if (refreshed) {
+        original.headers.set('Authorization', `Bearer ${refreshed.accessToken}`)
         return apiClient(original)
       }
       window.location.assign('/login')

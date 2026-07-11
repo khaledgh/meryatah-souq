@@ -1,8 +1,8 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { apiClient } from '../../lib/api-client'
-import { clearSession, getRefreshToken, setAccessToken, setRefreshToken } from '../../lib/auth-storage'
-import { authResponseSchema, type AuthUser } from '../../schemas/auth'
+import { apiClient, refreshSession } from '../../lib/api-client'
+import { clearSession, setAccessToken, setRefreshToken } from '../../lib/auth-storage'
+import { authResponseSchema, authUserSchema, type AuthUser } from '../../schemas/auth'
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -25,29 +25,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // The access token is memory-only (§5.1) and gone after a reload, so
   // without this a hard refresh always lands on /login. /auth/refresh
   // returns the full user payload, so one call re-establishes everything.
+  //
+  // Goes through refreshSession() rather than posting directly: the refresh
+  // token is single-use, and the page's first data queries 401 and trigger
+  // their own refresh at this exact moment. Two refreshes spending the same
+  // token look like theft to the backend, which revokes EVERY session —
+  // silently logging the admin out. refreshSession() holds the one mutex
+  // that prevents that.
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const refreshToken = getRefreshToken()
-      if (!refreshToken) {
-        // No await has happened yet, so the effect can't have been cancelled.
-        setIsRestoring(false)
-        return
-      }
       try {
-        const response = await apiClient.post<unknown>('/auth/refresh', { refresh_token: refreshToken })
-        const parsed = authResponseSchema.parse(response.data)
+        const refreshed = await refreshSession()
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- `cancelled` is set by the cleanup fn after this await; not statically visible.
         if (cancelled) return
-        if (parsed.user.role !== 'super_admin') {
+        if (!refreshed) return
+
+        const parsed = authUserSchema.safeParse(refreshed.user)
+        if (!parsed.success || parsed.data.role !== 'super_admin') {
           clearSession()
-        } else {
-          setAccessToken(parsed.access_token)
-          setRefreshToken(parsed.refresh_token)
-          setUser(parsed.user)
+          return
         }
-      } catch {
-        clearSession()
+        setUser(parsed.data)
       } finally {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- same async-cancellation flag as above.
         if (!cancelled) setIsRestoring(false)
