@@ -249,11 +249,39 @@ func (s *VendorService) SetActive(ctx context.Context, vendorID string, active b
 	return nil
 }
 
+// ListAll returns EVERY vendor — active or not, wherever it is — for the
+// super_admin Vendors page (blueprint §11.A3).
+//
+// This exists because the admin page used to call Nearby(), which filters
+// `is_active = true` and by radius: an admin who deactivated a vendor could
+// then no longer see it, so the one page that could re-activate it was also
+// the page hiding it. Management views must never inherit the customer-facing
+// discovery filters. Route RBAC (super_admin) is the only gate here — that is
+// deliberate, not an omission.
+func (s *VendorService) ListAll(ctx context.Context) ([]models.Vendor, *apperror.AppError) {
+	vendors := make([]models.Vendor, 0)
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT id, owner_user_id, name_i18n, category, store_category_id, address, logo_url, timezone,
+		       commission_pct, display_currency, scheduling_allowed, scheduling_enabled,
+		       scheduling_config, features, is_active, created_at,
+		       ST_X(location::geometry) AS longitude, ST_Y(location::geometry) AS latitude
+		FROM vendors
+		ORDER BY created_at DESC
+	`).Scan(&vendors).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("vendor: list all: %w", err))
+	}
+	return vendors, nil
+}
+
 // Nearby returns active vendors within radiusMeters of (lon, lat), nearest
 // first, using PostGIS's geography distance operator (blueprint §5, §11.C5
 // nearby-vendor lookup on the User App home screen). storeCategoryID
 // optionally restricts results to a single marketplace section (mobile
 // section-landing filter); nil/empty means no filter.
+//
+// Customer-facing: it deliberately hides inactive vendors. Admin views must
+// use ListAll instead.
 func (s *VendorService) Nearby(ctx context.Context, longitude, latitude float64, radiusMeters float64, limit int, storeCategoryID *string) ([]models.Vendor, *apperror.AppError) {
 	if !validLongitude(longitude) || !validLatitude(latitude) {
 		return nil, apperror.Validation("invalid location coordinates")

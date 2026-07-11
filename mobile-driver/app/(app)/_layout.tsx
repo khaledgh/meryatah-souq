@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const ACTIVE = '#ffc20e'
 const INACTIVE = '#9ca3af'
+
+// The bar's content height, above whatever the system reserves below it.
+const TAB_BAR_CONTENT_HEIGHT = 60
 
 // Tab layout for the authenticated driver shell. D2 (Availability) and D3
 // (Incoming Requests) live together on the "home" tab since availability
@@ -13,6 +16,14 @@ const INACTIVE = '#9ca3af'
 export default function AppLayout() {
   const { t } = useTranslation()
 
+  // Expo SDK 54 forces edge-to-edge on Android: the app draws UNDERNEATH the
+  // system navigation bar. The previous hardcoded `height: 64` /
+  // `paddingBottom: 10` therefore put the bottom of the tab bar behind the
+  // nav bar — icons and labels were clipped and partly untappable. The real
+  // inset is ~48dp for 3-button navigation and ~24dp for gestures, so it has
+  // to be measured, not guessed.
+  const insets = useSafeAreaInsets()
+
   return (
     <Tabs
       screenOptions={{
@@ -20,9 +31,9 @@ export default function AppLayout() {
         tabBarActiveTintColor: ACTIVE,
         tabBarInactiveTintColor: INACTIVE,
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? 88 : 64,
+          height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          paddingBottom: insets.bottom,
           paddingHorizontal: 4,
           backgroundColor: '#ffffff',
           borderTopWidth: 1,

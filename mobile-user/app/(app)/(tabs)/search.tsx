@@ -6,14 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { SearchBar } from '../../../src/components/ui/search-bar'
 import { useNearbyVendors } from '../../../src/features/home/use-nearby-vendors'
-import { useUserLocation } from '../../../src/features/location/use-user-location'
+import { useDeliveryLocation } from '../../../src/features/location/delivery-location-context'
 import { vendorDisplayName } from '../../../src/schemas/vendor'
 
 export default function SearchScreen() {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const { location } = useUserLocation()
+  const { location } = useDeliveryLocation()
   const nearby = useNearbyVendors(location)
 
   const results = (nearby.data ?? []).filter((v) => {

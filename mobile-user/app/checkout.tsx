@@ -9,6 +9,7 @@ import * as Location from 'expo-location'
 import { Button } from '../src/components/ui/button'
 import { TextField } from '../src/components/ui/text-field'
 import { useCart } from '../src/features/cart/cart-context'
+import { useDeliveryLocation } from '../src/features/location/delivery-location-context'
 import { useVendor } from '../src/features/vendor/use-vendor'
 import { useAvailableSlots } from '../src/features/checkout/use-available-slots'
 import { usePlaceOrder } from '../src/features/checkout/use-place-order'
@@ -30,6 +31,20 @@ export default function CheckoutScreen() {
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
+
+  // Seed from the delivery location the user already set on the home screen —
+  // they shouldn't have to pick it a second time here. Still fully editable:
+  // the GPS button and the map picker both overwrite it below.
+  const { location: deliveryLocation, isResolved: hasDeliveryLocation } = useDeliveryLocation()
+
+  useEffect(() => {
+    if (!hasDeliveryLocation) return
+    setLatitude((current) => current ?? deliveryLocation.latitude)
+    setLongitude((current) => current ?? deliveryLocation.longitude)
+    if (deliveryLocation.address) {
+      setAddress((current) => current || deliveryLocation.address || '')
+    }
+  }, [hasDeliveryLocation, deliveryLocation])
 
   // Consumes the pin the user placed on /location-picker (blueprint §11.C9
   // accuracy: refines the raw GPS fetch below with a user-confirmed exact
@@ -176,7 +191,10 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
+    // 'bottom' is required: this is a full-screen route with no tab bar
+    // beneath it, and Android edge-to-edge (SDK 54) draws the app under the
+    // system nav bar — without it the "Place Order" button sits under it.
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top', 'bottom']}>
       {/* Header */}
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">

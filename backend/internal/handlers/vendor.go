@@ -85,6 +85,20 @@ func (h *VendorHandler) Me(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"data": vendor})
 }
 
+// ListAll handles GET /api/v1/admin/vendors (super_admin only, blueprint
+// §11.A3): EVERY vendor, active or not, at any location.
+//
+// The admin page previously reused the public Nearby endpoint, which filters
+// out inactive vendors — so deactivating a vendor made it disappear from the
+// only page that could bring it back.
+func (h *VendorHandler) ListAll(c echo.Context) error {
+	vendors, appErr := h.vendors.ListAll(c.Request().Context())
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": vendors})
+}
+
 // Nearby handles GET /api/v1/vendors/nearby?lon=&lat=&radius_m=&limit=
 // (blueprint §11.C5 home screen nearby lookup, PostGIS-backed).
 func (h *VendorHandler) Nearby(c echo.Context) error {

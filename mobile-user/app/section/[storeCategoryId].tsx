@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useNearbyVendors, type VendorWithStatus } from '../../src/features/home/use-nearby-vendors'
-import { useUserLocation } from '../../src/features/location/use-user-location'
+import { useDeliveryLocation } from '../../src/features/location/delivery-location-context'
 import { useStoreCategories } from '../../src/features/home/use-store-categories'
 import { storeCategoryDisplayName, type StoreCategory } from '../../src/schemas/store-category'
 import { vendorDisplayName } from '../../src/schemas/vendor'
@@ -34,7 +34,7 @@ function SectionContent({ storeCategoryId, category }: { storeCategoryId: string
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const theme = useTheme()
-  const { location } = useUserLocation()
+  const { location } = useDeliveryLocation()
   const nearby = useNearbyVendors(location, storeCategoryId)
   const categoryName = category ? storeCategoryDisplayName(category, i18n.language) : undefined
 

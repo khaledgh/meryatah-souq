@@ -5,18 +5,17 @@ import { vendorDetailSchema, vendorListSchema, type Vendor } from '../../schemas
 
 const VENDORS_KEY = ['vendors'] as const
 
-// Admin has no dedicated "list all vendors" endpoint yet (backend only
-// exposes GET /vendors/:id and /vendors/nearby, both built for the public
-// user-facing store discovery flow, not admin management). Nearby with a
-// generous radius from a neutral point is the closest existing endpoint —
-// flagged so a real ListAllVendors admin endpoint can replace this later.
+// Every vendor, active or not, wherever it is.
+//
+// This used to call the PUBLIC /vendors/nearby endpoint, which filters
+// `is_active = true` and by geographic radius — so deactivating a vendor made
+// it vanish from the very page that could re-activate it. Admin management
+// views must never inherit the customer-facing discovery filters.
 export function useVendors() {
   return useQuery({
     queryKey: VENDORS_KEY,
     queryFn: async () => {
-      const response = await apiClient.get('/vendors/nearby', {
-        params: { lon: 35.5, lat: 33.9, radius_m: 20000000, limit: 100 },
-      })
+      const response = await apiClient.get('/admin/vendors')
       return vendorListSchema.parse(response.data).data ?? []
     },
   })
@@ -51,6 +50,37 @@ export function useCreateVendor() {
       return vendorDetailSchema.parse(response.data).data
     },
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: VENDORS_KEY })
+    },
+  })
+}
+
+// Moves a vendor on the map. Hits the admin PATCH route, which reuses the same
+// service the vendor owner's own profile edit does — so a super_admin can fix
+// any vendor's position (including one that was created with none).
+export function useSetVendorLocation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      longitude,
+      latitude,
+      address,
+    }: {
+      vendorId: string
+      longitude: number
+      latitude: number
+      address?: string
+    }) => {
+      const response = await apiClient.patch(`/admin/vendors/${vendorId}`, {
+        longitude,
+        latitude,
+        ...(address !== undefined ? { address } : {}),
+      })
+      return vendorDetailSchema.parse(response.data).data
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['vendor', variables.vendorId] })
       void queryClient.invalidateQueries({ queryKey: VENDORS_KEY })
     },
   })

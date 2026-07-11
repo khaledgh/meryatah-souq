@@ -12,6 +12,7 @@ import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-rean
 
 import { AuthProvider } from '../src/features/auth/auth-context'
 import { CartProvider } from '../src/features/cart/cart-context'
+import { DeliveryLocationProvider } from '../src/features/location/delivery-location-context'
 import '../src/i18n/config'
 import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
 
@@ -55,10 +56,12 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <LocaleBootstrap />
           <AuthProvider>
-            <CartProvider>
-              <StatusBar style="dark" />
-              <Stack screenOptions={{ headerShown: false }} />
-            </CartProvider>
+            <DeliveryLocationProvider>
+              <CartProvider>
+                <StatusBar style="dark" />
+                <Stack screenOptions={{ headerShown: false }} />
+              </CartProvider>
+            </DeliveryLocationProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

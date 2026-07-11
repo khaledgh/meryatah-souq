@@ -64,7 +64,8 @@
     "resetLockout": "Reset lockout",
     "vendorIdOptional": "Vendor ID (optional)",
     "sortOrder": "Sort order",
-    "none": "None"
+    "none": "None",
+    "saving": "Saving…"
   },
   "vendors": {
     "addVendor": "Add vendor",
@@ -82,7 +83,10 @@
     "commissionOverrideHint": "Leave blank to use the platform default.",
     "appDefault": "App default",
     "schedulingAllowedLabel": "Scheduling allowed (admin grant)",
-    "schedulingEnabledHint": "Vendor-enabled: {{value}} (set by the vendor, only available once granted here)"
+    "schedulingEnabledHint": "Vendor-enabled: {{value}} (set by the vendor, only available once granted here)",
+    "location": "Location",
+    "locationHint": "Drag the pin or click the map to set where this store is. Customers find stores by distance from here.",
+    "noLocation": "No location set"
   },
   "bannerAds": {
     "image": "Image",

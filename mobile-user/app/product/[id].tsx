@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { QuantityStepper } from '../../src/components/ui/quantity-stepper'
 import { resolveMediaUrl } from '../../src/lib/media'
@@ -40,6 +40,10 @@ export default function ProductDetailScreen() {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const { addToCart, updateQuantity } = useCart()
+  // The Add-to-Cart bar is absolutely positioned at bottom: 0, and Android
+  // edge-to-edge (SDK 54) draws that under the system nav bar. Pad by the
+  // real inset instead of the hardcoded guess that used to be here.
+  const insets = useSafeAreaInsets()
 
   const [quantity, setQuantity] = useState(1)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -351,8 +355,9 @@ export default function ProductDetailScreen() {
           </View>
         )}
 
-        {/* Bottom spacing for add-to-cart bar */}
-        <View style={{ height: 100 }} />
+        {/* Bottom spacing for add-to-cart bar — must clear the bar AND the
+            system nav bar the bar now pads for. */}
+        <View style={{ height: 100 + insets.bottom }} />
       </ScrollView>
 
       {/* ── Bottom Action Bar ── */}
@@ -365,7 +370,7 @@ export default function ProductDetailScreen() {
             right: 0,
             backgroundColor: CARD,
             paddingHorizontal: 20,
-            paddingBottom: 28,
+            paddingBottom: 16 + insets.bottom,
             paddingTop: 16,
             flexDirection: 'row',
             gap: 14,

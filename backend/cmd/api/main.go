@@ -178,7 +178,14 @@ func main() {
 
 	v1.GET("/vendors/nearby", vendorHandler.Nearby)
 	v1.GET("/vendors/:id", vendorHandler.Get)
+	// Every vendor, active or not — the admin management view must not inherit
+	// the customer-facing discovery filters (see VendorService.ListAll).
+	admin.GET("/vendors", vendorHandler.ListAll)
 	admin.POST("/vendors", vendorHandler.Create)
+	// Same handler the vendor owner uses to edit their own profile; here it
+	// lets an admin fix any vendor's details, including relocating it on a map
+	// (UpdateVendorInput already carries Longitude/Latitude).
+	admin.PATCH("/vendors/:id", vendorHandler.Update)
 	admin.PUT("/vendors/:id/commission", vendorHandler.SetCommission)
 	admin.PUT("/vendors/:id/scheduling-allowed", vendorHandler.GrantScheduling)
 	admin.PUT("/vendors/:id/active", vendorHandler.SetActive)

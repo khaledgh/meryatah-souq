@@ -2,13 +2,14 @@ import { Feather } from '@expo/vector-icons'
 import { Camera, type CameraRef, type ViewStateChangeEvent } from '@maplibre/maplibre-react-native'
 import * as Location from 'expo-location'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, Text, View, type NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { MapView } from '../src/components/map/map-view'
 import { Button } from '../src/components/ui/button'
+import { useDeliveryLocation } from '../src/features/location/delivery-location-context'
 
 // Beirut — only used when we have neither a previously-picked point nor a GPS
 // fix, so the map opens somewhere plausible rather than at [0,0].
@@ -29,8 +30,12 @@ interface Coords {
 // ride-hailing/delivery app has trained people to expect.
 export default function LocationPickerScreen() {
   const { t } = useTranslation()
-  const params = useLocalSearchParams<{ lat?: string; lng?: string }>()
+  // mode 'delivery' = opened from the home screen to set the app's delivery
+  // location. Anything else (the default) = opened from checkout, which wants
+  // the point handed back as route params.
+  const params = useLocalSearchParams<{ lat?: string; lng?: string; mode?: string }>()
   const cameraRef = useRef<CameraRef>(null)
+  const { setLocation: setDeliveryLocation } = useDeliveryLocation()
 
   const initialLat = params.lat != null ? Number(params.lat) : null
   const initialLng = params.lng != null ? Number(params.lng) : null
@@ -54,29 +59,51 @@ export default function LocationPickerScreen() {
     setPicked({ longitude, latitude })
   }, [])
 
-  const useMyLocation = useCallback(async () => {
-    setLocating(true)
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert(
-          t('common.error', 'Error'),
-          t('checkout.locationPermissionDenied', 'Permission to access location was denied'),
-        )
-        return
+  // Centres the map on the device's GPS fix. `silent` suppresses the alerts,
+  // for the automatic centring on open — a denied permission there is not
+  // something to interrupt the user about; they can still pan the map, and
+  // tapping the crosshair explicitly WILL tell them why it failed.
+  const goToCurrentLocation = useCallback(
+    async (silent = false) => {
+      setLocating(true)
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') {
+          if (!silent) {
+            Alert.alert(
+              t('common.error', 'Error'),
+              t('checkout.locationPermissionDenied', 'Permission to access location was denied'),
+            )
+          }
+          return
+        }
+        const fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        cameraRef.current?.flyTo({
+          center: [fix.coords.longitude, fix.coords.latitude],
+          zoom: 16,
+          duration: 600,
+        })
+      } catch {
+        if (!silent) {
+          Alert.alert(
+            t('common.error', 'Error'),
+            t('locationPicker.gpsFailed', 'Could not get your current location'),
+          )
+        }
+      } finally {
+        setLocating(false)
       }
-      const fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-      cameraRef.current?.flyTo({
-        center: [fix.coords.longitude, fix.coords.latitude],
-        zoom: 16,
-        duration: 600,
-      })
-    } catch {
-      Alert.alert(t('common.error', 'Error'), t('locationPicker.gpsFailed', 'Could not get your current location'))
-    } finally {
-      setLocating(false)
-    }
-  }, [t])
+    },
+    [t],
+  )
+
+  // Open on the user's actual position — but only when the caller didn't
+  // already hand us one. Opening at a location the user previously chose and
+  // then yanking the map away to their GPS would be worse than useless.
+  useEffect(() => {
+    if (hasInitial) return
+    void goToCurrentLocation(true)
+  }, [hasInitial, goToCurrentLocation])
 
   const confirm = useCallback(async () => {
     setResolving(true)
@@ -95,6 +122,22 @@ export default function LocationPickerScreen() {
         // actually get the driver to the door, so a failed lookup still lets
         // the user proceed with just the point and no prefilled address.
       }
+
+      // Two callers, two contracts:
+      //  - 'delivery' (home screen): this IS the app's delivery location, so
+      //    save it to the shared context and simply go back.
+      //  - default (checkout): hand the point back as route params for the
+      //    checkout form to consume.
+      if (params.mode === 'delivery') {
+        await setDeliveryLocation({
+          longitude: picked.longitude,
+          latitude: picked.latitude,
+          address: address || undefined,
+        })
+        router.back()
+        return
+      }
+
       router.replace({
         pathname: '/checkout',
         params: {
@@ -106,10 +149,13 @@ export default function LocationPickerScreen() {
     } finally {
       setResolving(false)
     }
-  }, [picked])
+  }, [picked, params.mode, setDeliveryLocation])
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
+    // 'bottom' is required: full-screen route with no tab bar beneath it, and
+    // Android edge-to-edge (SDK 54) draws the app under the system nav bar —
+    // without it the "Confirm Location" button sits under it.
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top', 'bottom']}>
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">
           <Feather name="arrow-left" size={24} color="#374151" />
@@ -155,7 +201,7 @@ export default function LocationPickerScreen() {
         </Text>
 
         <Pressable
-          onPress={() => void useMyLocation()}
+          onPress={() => void goToCurrentLocation()}
           disabled={locating}
           className="absolute bottom-4 end-4 rounded-full bg-white p-3 dark:bg-gray-900"
           style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 4 }}

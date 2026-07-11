@@ -22,7 +22,7 @@ import { resolveMediaUrl } from '../../../src/lib/media'
 import { storeCategoryDisplayName, type StoreCategory } from '../../../src/schemas/store-category'
 import { vendorDisplayName } from '../../../src/schemas/vendor'
 import { useAuth } from '../../../src/features/auth/auth-context'
-import { useUserLocation } from '../../../src/features/location/use-user-location'
+import { useDeliveryLocation } from '../../../src/features/location/delivery-location-context'
 
 const ACCENT = '#ffc20e'
 const TEXT_DARK = '#111827'
@@ -36,7 +36,7 @@ export default function HomeScreen() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
 
-  const { location } = useUserLocation()
+  const { location } = useDeliveryLocation()
   const nearby = useNearbyVendors(location)
   const bannerAds = useBannerAds()
   const storeCategories = useStoreCategories()
@@ -127,8 +127,22 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
 
-                {/* Location pill */}
+                {/* Location pill — opens the map picker. This used to be a
+                    dead Pressable showing a hardcoded "Beirut, Lebanon" while
+                    the store list was actually ranked by the device's GPS, so
+                    it claimed a location the app wasn't using and gave no way
+                    to change it. */}
                 <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/location-picker',
+                      params: {
+                        mode: 'delivery',
+                        lat: String(location.latitude),
+                        lng: String(location.longitude),
+                      },
+                    })
+                  }
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -140,11 +154,15 @@ export default function HomeScreen() {
                     paddingVertical: 6,
                     marginBottom: 18,
                     marginTop: 6,
+                    maxWidth: '100%',
                   }}
                 >
                   <Feather name="map-pin" size={12} color="#1a1a1a" />
-                  <Text style={{ color: '#1a1a1a', fontSize: 12, fontWeight: '700' }}>
-                    Beirut, Lebanon
+                  <Text
+                    numberOfLines={1}
+                    style={{ color: '#1a1a1a', fontSize: 12, fontWeight: '700', flexShrink: 1 }}
+                  >
+                    {location.address ?? t('home.setLocation')}
                   </Text>
                   <Feather name="chevron-down" size={12} color="#1a1a1a" />
                 </Pressable>
