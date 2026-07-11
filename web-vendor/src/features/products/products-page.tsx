@@ -1,4 +1,5 @@
 import { ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
@@ -8,10 +9,34 @@ import { DataTable, type Column } from '../../components/data-table'
 import { EmptyState, ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
+import { resolveMediaUrl } from '../../lib/media'
 import { vendorDisplayName } from '../../schemas/vendor'
 import type { Product } from '../../schemas/catalog'
 import { useVendor } from '../auth/auth-context'
 import { useDeleteProduct, useProducts, useUpdateProduct } from './use-products'
+
+// Thumbnail that falls back to the placeholder icon both when there's no URL
+// and when the image fails to load (broken link, media host unreachable),
+// so a bad URL degrades gracefully instead of showing a broken-image glyph.
+function ProductThumbnail({ url }: { url?: string }) {
+  const [failed, setFailed] = useState(false)
+  const resolved = resolveMediaUrl(url)
+  if (resolved && !failed) {
+    return (
+      <img
+        src={resolved}
+        alt=""
+        onError={() => { setFailed(true) }}
+        className="h-10 w-10 rounded-md object-cover ring-1 ring-gray-200 dark:ring-gray-800"
+      />
+    )
+  }
+  return (
+    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
+      <ImageIcon className="size-4" aria-hidden="true" />
+    </span>
+  )
+}
 
 // Blueprint §11.B7: Products — table (image, name, price USD + converted,
 // stock, active). Create/edit open the editor (B8); toggle active and
@@ -30,16 +55,7 @@ export function ProductsPage() {
     {
       key: 'image',
       header: t('products.image'),
-      render: (p) => {
-        const url = primaryImage(p)
-        return url ? (
-          <img src={url} alt="" className="h-10 w-10 rounded-md object-cover ring-1 ring-gray-200 dark:ring-gray-800" />
-        ) : (
-          <span className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
-            <ImageIcon className="size-4" aria-hidden="true" />
-          </span>
-        )
-      },
+      render: (p) => <ProductThumbnail url={primaryImage(p)} />,
     },
     { key: 'name', header: t('products.name'), render: (p) => <span className="font-medium">{vendorDisplayName(p, i18n.language)}</span> },
     {

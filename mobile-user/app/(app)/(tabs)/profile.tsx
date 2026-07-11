@@ -1,14 +1,65 @@
+import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Alert, Pressable, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Feather } from '@expo/vector-icons'
 import { reloadAppAsync } from 'expo'
 
-import { Button } from '../../../src/components/ui/button'
 import { useAuth } from '../../../src/features/auth/auth-context'
 import { setLocale } from '../../../src/i18n/locale-manager'
+
+// ── Dark theme constants ───────────────────────────────────────────────────
+const BG = '#0f111a'
+const CARD = '#1e2235'
+const ACCENT = '#ffc20e'
+const TEXT = '#f9fafb'
+const MUTED = '#9ca3af'
+
+interface MenuItem {
+  icon: React.ComponentProps<typeof Feather>['name']
+  label: string
+  onPress: () => void
+  right?: React.ReactNode
+}
+
+function MenuRow({ icon, label, onPress, right }: MenuItem) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        backgroundColor: CARD,
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+      }}
+    >
+      {/* Icon circle */}
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: `${ACCENT}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Feather name={icon} size={18} color={ACCENT} />
+      </View>
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: TEXT }}>{label}</Text>
+      {right ?? <Feather name="chevron-right" size={16} color={MUTED} />}
+    </Pressable>
+  )
+}
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation()
@@ -16,7 +67,7 @@ export default function ProfileScreen() {
   const { user, isGuest, logout } = useAuth()
   const [busy, setBusy] = useState(false)
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       t('profile.logoutTitle', 'Logout'),
       t('profile.logoutConfirm', 'Are you sure you want to log out?'),
@@ -25,9 +76,11 @@ export default function ProfileScreen() {
         {
           text: t('profile.logoutConfirmBtn', 'Logout'),
           style: 'destructive',
-          onPress: async () => {
-            await logout()
-            router.replace('/(auth)/phone')
+          onPress: () => {
+            void (async () => {
+              await logout()
+              router.replace('/(auth)/phone')
+            })()
           },
         },
       ]
@@ -42,7 +95,7 @@ export default function ProfileScreen() {
       if (needsReload) {
         Alert.alert(
           t('language.reloadTitle', 'Restart Required'),
-          t('language.reloadMessage', 'The app must restart to apply the language direction changes.'),
+          t('language.reloadMessage', 'The app must restart to apply the language change.'),
           [
             {
               text: t('language.reloadConfirm', 'Restart Now'),
@@ -58,113 +111,192 @@ export default function ProfileScreen() {
     }
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
-      {/* Header */}
-      <View className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
-        <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">
-          {t('profile.title', 'My Profile')}
-        </Text>
-      </View>
+  const initials = user
+    ? `${user.first_name?.charAt(0) ?? ''}${user.last_name?.charAt(0) ?? ''}`.toUpperCase()
+    : 'G'
 
-      {/* User Information */}
-      <View className="px-5 py-6 items-center border-b border-gray-50 dark:border-gray-800/50">
-        <View className="size-20 rounded-full bg-brand-50 items-center justify-center mb-3 dark:bg-brand-950/30">
-          <Feather name="user" size={36} color="#f59e0b" />
-        </View>
-        
-        {isGuest ? (
-          <View className="items-center">
-            <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {t('profile.guest', 'Guest User')}
-            </Text>
-            <Pressable
-              onPress={() => router.replace('/(auth)/phone')}
-              className="mt-1"
-            >
-              <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">
-                {t('profile.signInNow', 'Sign in or create account')}
-              </Text>
-            </Pressable>
-          </View>
-        ) : user ? (
-          <View className="items-center">
-            <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {user.first_name} {user.last_name}
-            </Text>
-            <Text className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-              {user.phone}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Settings Options */}
-      <View className="p-5 gap-3 flex-1">
-        {/* Language Selection Row */}
-        <Pressable
-          onPress={toggleLanguage}
-          disabled={busy}
-          className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
+  const menuItems: MenuItem[] = [
+    {
+      icon: 'user',
+      label: t('profile.myProfile', 'My Profile'),
+      onPress: () => {},
+    },
+    {
+      icon: 'shopping-bag',
+      label: t('profile.myOrders', 'My Orders'),
+      onPress: () => router.push('/orders'),
+    },
+    {
+      icon: 'tag',
+      label: t('profile.coupons', 'Coupons & Offers'),
+      onPress: () => router.push('/coupons'),
+    },
+    {
+      icon: 'globe',
+      label: t('profile.language', 'App Language'),
+      onPress: busy ? () => {} : () => { void toggleLanguage() },
+      right: (
+        <View
+          style={{
+            borderRadius: 20,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            backgroundColor: `${ACCENT}22`,
+          }}
         >
-          <View className="flex-row items-center gap-3">
-            <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
-              <Feather name="globe" size={20} color="#f59e0b" />
-            </View>
-            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
-              {t('profile.language', 'App Language')}
-            </Text>
-          </View>
-          <Text className="text-sm font-bold text-brand-600 dark:text-brand-400">
+          <Text style={{ fontSize: 11, fontWeight: '700', color: ACCENT }}>
             {i18n.language === 'ar' ? 'العربية' : 'English'}
           </Text>
-        </Pressable>
-
-        {/* Coupons & Offers */}
-        <Pressable
-          onPress={() => router.push('/coupons')}
-          className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
-        >
-          <View className="flex-row items-center gap-3">
-            <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
-              <Feather name="tag" size={20} color="#f59e0b" />
-            </View>
-            <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
-              {t('profile.coupons', 'Coupons & Offers')}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={16} color="#9ca3af" />
-        </Pressable>
-
-        {/* Saved Addresses (Placeholder) */}
-        {!isGuest && (
-          <Pressable
-            onPress={() => Alert.alert(t('common.info', 'Information'), t('profile.addressesUnavailable', 'Saved addresses will be available in the next release.'))}
-            className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 active:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
-          >
-            <View className="flex-row items-center gap-3">
-              <View className="size-10 rounded-xl bg-brand-50 items-center justify-center dark:bg-brand-950/30">
-                <Feather name="map-pin" size={20} color="#f59e0b" />
-              </View>
-              <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                {t('profile.savedAddresses', 'Saved Addresses')}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color="#9ca3af" />
-          </Pressable>
-        )}
-      </View>
-
-      {/* Logout button */}
-      {!isGuest && (
-        <View className="p-5">
-          <Button
-            label={t('profile.logoutBtn', 'Logout')}
-            variant="secondary"
-            onPress={handleLogout}
-          />
         </View>
-      )}
+      ),
+    },
+    {
+      icon: 'bell',
+      label: t('profile.notifications', 'Notify Me'),
+      onPress: () =>
+        Alert.alert(
+          t('common.info', 'Info'),
+          t('profile.notificationsUnavailable', 'Notification preferences are coming soon.')
+        ),
+    },
+    {
+      icon: 'help-circle',
+      label: t('profile.supportHelp', 'Support & Help'),
+      onPress: () => {},
+    },
+    {
+      icon: 'shield',
+      label: t('profile.privacy', 'Privacy Policy'),
+      onPress: () => {},
+    },
+  ]
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: BG }} edges={['top']}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 36 }}
+      >
+        {/* ── Page title ── */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, marginBottom: 20 }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: TEXT }}>
+            {t('profile.title', 'Profile')}
+          </Text>
+        </View>
+
+        {/* ── Avatar card ── */}
+        <View
+          style={{
+            marginHorizontal: 20,
+            marginBottom: 24,
+            backgroundColor: CARD,
+            borderRadius: 28,
+            padding: 20,
+            alignItems: 'center',
+            gap: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 12,
+            elevation: 6,
+          }}
+        >
+          {/* Avatar circle with yellow ring */}
+          <View
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              backgroundColor: `${ACCENT}22`,
+              borderWidth: 3,
+              borderColor: ACCENT,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: ACCENT,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 6,
+            }}
+          >
+            {isGuest ? (
+              <Feather name="user" size={40} color={ACCENT} />
+            ) : (
+              <Text style={{ fontSize: 28, fontWeight: '800', color: ACCENT }}>{initials}</Text>
+            )}
+          </View>
+
+          {/* Name + phone */}
+          {isGuest ? (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: TEXT }}>
+                {t('profile.guest', 'Guest User')}
+              </Text>
+              <Pressable onPress={() => router.replace('/(auth)/phone')} style={{ marginTop: 4 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: ACCENT, textDecorationLine: 'underline' }}>
+                  {t('profile.signInNow', 'Sign in or create account')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : user ? (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: TEXT }}>
+                {user.first_name} {user.last_name}
+              </Text>
+              <Text style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{user.phone}</Text>
+            </View>
+          ) : null}
+
+          {/* Yellow Edit Profile button */}
+          {!isGuest && (
+            <Pressable
+              style={{
+                marginTop: 4,
+                borderRadius: 20,
+                paddingHorizontal: 20,
+                paddingVertical: 8,
+                backgroundColor: ACCENT,
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#1a1a1a' }}>
+                {t('profile.editProfile', 'Edit Profile')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* ── Menu rows ── */}
+        <View style={{ paddingHorizontal: 20, gap: 10 }}>
+          {menuItems.map((item) => (
+            <MenuRow key={item.label} {...item} />
+          ))}
+
+          {/* Sign Out */}
+          {!isGuest && (
+            <Pressable
+              onPress={handleLogout}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                borderRadius: 18,
+                paddingVertical: 16,
+                backgroundColor: '#ef444420',
+                borderWidth: 1.5,
+                borderColor: '#ef444440',
+                marginTop: 6,
+              }}
+            >
+              <Feather name="log-out" size={18} color="#f87171" />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#f87171' }}>
+                {t('profile.signOut', 'Sign Out')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }

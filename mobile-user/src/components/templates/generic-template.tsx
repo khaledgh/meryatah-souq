@@ -3,56 +3,104 @@ import { Image, Pressable, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 
 import { resolveMediaUrl } from '../../lib/media'
-import { productDisplayDescription, productDisplayName } from '../../schemas/product'
+import { productDisplayName } from '../../schemas/product'
 import type { ProductCardProps } from './product-card-types'
 
-// Fallback template for store categories with template_kind="generic" (or
-// none) — the original one-size-fits-all grid card, unchanged in look.
+/**
+ * Generic 2-column grid card — matches mockup "Near by Offer" grid:
+ * Large square food image, name below, price + round yellow add button at bottom.
+ * Dark card background matching app dark theme.
+ */
 export function GenericProductCard({ product, accentColor, onPress, onAdd }: ProductCardProps) {
   const { t, i18n } = useTranslation()
   const hasStock = product.stock > 0
   const imageUrl = resolveMediaUrl(product.images[0]?.url)
+  const accent = accentColor ?? '#ffc20e'
 
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 rounded-3xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 shadow-sm gap-2"
-      style={{ maxWidth: '48.5%' }}
+      style={{
+        flex: 1,
+        borderRadius: 20,
+        backgroundColor: '#1e2235',
+        overflow: 'hidden',
+        maxWidth: '48.5%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        elevation: 4,
+      }}
     >
-      <View className="aspect-square rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden items-center justify-center relative">
+      {/* Large food image */}
+      <View
+        style={{
+          width: '100%',
+          aspectRatio: 1,
+          backgroundColor: '#2a2e45',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}
+      >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
+          <Image
+            source={{ uri: imageUrl }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
         ) : (
-          <Feather name="image" size={32} color="#d1d5db" />
+          <Feather name="image" size={36} color="#4b5563" />
         )}
         {!hasStock && (
-          <View className="absolute inset-0 bg-black/40 items-center justify-center">
-            <Text className="text-white text-xs font-bold uppercase">{t('product.outOfStock', 'Out of stock')}</Text>
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
+              {t('product.outOfStock', 'Out of stock')}
+            </Text>
           </View>
         )}
       </View>
 
-      <View className="gap-1 flex-1">
-        <Text className="text-sm font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
+      {/* Card body */}
+      <View style={{ padding: 10, gap: 8 }}>
+        <Text
+          style={{ fontSize: 13, fontWeight: '700', color: '#f9fafb' }}
+          numberOfLines={1}
+        >
           {productDisplayName(product, i18n.language)}
         </Text>
-        <Text className="text-xs text-gray-400 dark:text-gray-500" numberOfLines={1}>
-          {productDisplayDescription(product, i18n.language)}
-        </Text>
-      </View>
 
-      <View className="flex-row items-center justify-between mt-1">
-        <Text className="text-sm font-bold" style={{ color: accentColor }}>
-          ${product.price_usd.toFixed(2)}
-        </Text>
-        <Pressable
-          onPress={onAdd}
-          disabled={!hasStock}
-          className="size-8 rounded-xl items-center justify-center"
-          style={{ backgroundColor: hasStock ? accentColor : undefined }}
-        >
-          <Feather name="plus" size={16} color={hasStock ? '#fff' : '#9ca3af'} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: accent }}>
+            ${product.price_usd.toFixed(2)}
+          </Text>
+          <Pressable
+            onPress={onAdd}
+            disabled={!hasStock}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: hasStock ? accent : '#374151',
+            }}
+          >
+            <Feather name="plus" size={16} color={hasStock ? '#1a1a1a' : '#6b7280'} />
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   )

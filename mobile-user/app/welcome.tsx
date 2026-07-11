@@ -1,20 +1,32 @@
 import { useRouter } from 'expo-router'
-import { useState, useRef } from 'react'
-import { Animated, Dimensions, FlatList, Image, Text, Pressable, View } from 'react-native'
+import { useRef, useState } from 'react'
+import {
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  Pressable,
+  Text,
+  View,
+  type ViewToken,
+} from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Feather } from '@expo/vector-icons'
 import * as SecureStore from 'expo-secure-store'
-
-import { Button } from '../src/components/ui/button'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const ONBOARDING_STORAGE_KEY = 'meryata_user_onboarded'
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const SLIDE_IMAGE = require('../assets/icon.png') as number
 
 interface Slide {
   id: string
   titleKey: string
   descKey: string
-  image: any
+  image: number
 }
 
 const SLIDES: Slide[] = [
@@ -22,19 +34,19 @@ const SLIDES: Slide[] = [
     id: '1',
     titleKey: 'onboarding.title1',
     descKey: 'onboarding.desc1',
-    image: require('../assets/icon.png'), // placeholder image, can be replaced
+    image: SLIDE_IMAGE,
   },
   {
     id: '2',
     titleKey: 'onboarding.title2',
     descKey: 'onboarding.desc2',
-    image: require('../assets/icon.png'),
+    image: SLIDE_IMAGE,
   },
   {
     id: '3',
     titleKey: 'onboarding.title3',
     descKey: 'onboarding.desc3',
-    image: require('../assets/icon.png'),
+    image: SLIDE_IMAGE,
   },
 ]
 
@@ -54,38 +66,38 @@ export default function WelcomeScreen() {
     if (activeIndex === SLIDES.length - 1) {
       void finishOnboarding()
     } else {
-      flatListRef.current?.scrollToIndex({
-        index: activeIndex + 1,
-        animated: true,
-      })
-      setActiveIndex(activeIndex + 1)
+      const nextIndex = activeIndex + 1
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true })
+      setActiveIndex(nextIndex)
     }
   }
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems[0] !== undefined) {
-      setActiveIndex(viewableItems[0].index)
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const first = viewableItems[0]
+    if (first !== undefined && first.index !== null) {
+      setActiveIndex(first.index)
     }
   }).current
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current
+
+  const isLast = activeIndex === SLIDES.length - 1
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
-      {/* Skip Button */}
-      <View className="flex-row justify-end px-5 py-2">
-        {activeIndex < SLIDES.length - 1 && (
-          <Pressable onPress={() => void finishOnboarding()}>
-            <Text className="text-sm font-semibold text-gray-400 dark:text-gray-500">
-              {t('common.skip', 'Skip')}
-            </Text>
-          </Pressable>
-        )}
-      </View>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top', 'bottom']}>
+      {/* Skip button */}
+      {!isLast && (
+        <Pressable
+          onPress={() => void finishOnboarding()}
+          className="absolute top-12 end-5 z-10 rounded-full bg-white/30 px-4 py-1.5"
+        >
+          <Text className="text-sm font-semibold text-brand-800 dark:text-brand-300">
+            {t('common.skip', 'Skip')}
+          </Text>
+        </Pressable>
+      )}
 
-      {/* Slider */}
+      {/* Slide Pager */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -99,47 +111,101 @@ export default function WelcomeScreen() {
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: false }
         )}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={{ width: SCREEN_WIDTH }} className="items-center justify-center p-8 flex-1">
-            <View className="size-48 bg-brand-50 rounded-full items-center justify-center mb-8 dark:bg-brand-950/20">
-              <Image source={item.image} className="w-32 h-32 opacity-80" resizeMode="contain" />
+          <View style={{ width: SCREEN_WIDTH }} className="flex-1">
+            {/* Yellow curved upper section */}
+            <View
+              className="items-center justify-end bg-brand-500"
+              style={{
+                height: '52%',
+                borderBottomLeftRadius: 60,
+                borderBottomRightRadius: 60,
+                paddingBottom: 36,
+              }}
+            >
+              {/* Illustration circle */}
+              <View
+                className="bg-brand-400 items-center justify-center shadow-lg"
+                style={{
+                  width: 180,
+                  height: 180,
+                  borderRadius: 90,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 16,
+                  elevation: 12,
+                }}
+              >
+                <View
+                  className="bg-white/20 items-center justify-center"
+                  style={{ width: 148, height: 148, borderRadius: 74 }}
+                >
+                  <Image
+                    source={item.image}
+                    style={{ width: 100, height: 100 }}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
             </View>
-            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-3">
-              {t(item.titleKey, item.titleKey) as string}
-            </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-[280px] leading-relaxed">
-              {t(item.descKey, item.descKey) as string}
-            </Text>
+
+            {/* White text section */}
+            <View className="flex-1 items-center justify-center px-8 pt-8">
+              <Text className="mb-3 text-center text-2xl font-extrabold text-gray-900 dark:text-gray-100">
+                {t(item.titleKey, item.titleKey) as string}
+              </Text>
+              <Text className="text-center text-sm leading-6 text-gray-500 dark:text-gray-400 max-w-[280px]">
+                {t(item.descKey, item.descKey) as string}
+              </Text>
+            </View>
           </View>
         )}
-        keyExtractor={(item) => item.id}
       />
 
-      {/* Footer */}
-      <View className="px-5 py-8 items-center">
-        {/* Pagination Dots */}
-        <View className="flex-row gap-1.5 mb-8">
+      {/* Footer: dots + next button */}
+      <View
+        className="flex-row items-center justify-between px-8"
+        style={{ paddingBottom: Platform.OS === 'ios' ? 20 : 28 }}
+      >
+        {/* Pagination dots */}
+        <View className="flex-row items-center gap-2">
           {SLIDES.map((_, i) => (
             <View
               key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                activeIndex === i ? 'w-5 bg-brand-500' : 'w-1.5 bg-gray-200 dark:bg-gray-800'
-              }`}
+              style={{
+                height: 8,
+                width: activeIndex === i ? 24 : 8,
+                borderRadius: 4,
+                backgroundColor: activeIndex === i ? '#ffc20e' : '#e5e7eb',
+              }}
             />
           ))}
         </View>
 
-        {/* Action Button */}
-        <View className="w-full">
-          <Button
-            label={
-              activeIndex === SLIDES.length - 1
-                ? (t('onboarding.getStarted', 'Get Started') as string)
-                : (t('common.next', 'Next') as string)
-            }
-            onPress={handleNext}
-          />
-        </View>
+        {/* Next / Get Started round button */}
+        <Pressable
+          onPress={handleNext}
+          className="items-center justify-center rounded-full bg-brand-500 active:bg-brand-600 shadow-md"
+          style={{
+            width: 60,
+            height: 60,
+            shadowColor: '#ffc20e',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
+        >
+          {isLast ? (
+            <Text className="text-xs font-bold text-gray-900 text-center px-1">
+              {t('onboarding.go', 'Go!')}
+            </Text>
+          ) : (
+            <Feather name="arrow-right" size={26} color="#1a1a1a" />
+          )}
+        </Pressable>
       </View>
     </SafeAreaView>
   )

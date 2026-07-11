@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import MapView, { Marker } from 'react-native-maps'
 
-import { Button } from '../../src/components/ui/button'
 import { useOrder } from '../../src/features/orders/use-my-orders'
 import { apiClient, BASE_URL } from '../../src/lib/api-client'
 
@@ -132,7 +131,13 @@ export default function OrderTrackingScreen() {
         <Text className="text-sm text-red-600 dark:text-red-400 mb-4">
           {t('orders.trackError', 'Failed to load order tracking details')}
         </Text>
-        <Button label={t('common.retry', 'Retry')} onPress={() => void refetch()} />
+        <Pressable
+          onPress={() => void refetch()}
+          className="rounded-2xl px-6 py-3 active:opacity-90"
+          style={{ backgroundColor: '#ffc20e' }}
+        >
+          <Text className="text-sm font-bold text-gray-900">{t('common.retry', 'Retry')}</Text>
+        </Pressable>
       </SafeAreaView>
     )
   }
@@ -146,7 +151,7 @@ export default function OrderTrackingScreen() {
   ]
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-950" edges={['top']}>
       {/* Header */}
       <View className="px-5 py-3 flex-row items-center justify-between border-b border-gray-50 dark:border-gray-900">
         <Pressable onPress={() => router.back()} className="p-1">
@@ -200,18 +205,39 @@ export default function OrderTrackingScreen() {
             </MapView>
             
             {/* Live Indicator overlay */}
-            <View className="absolute top-3 left-3 bg-black/60 rounded-full px-3 py-1.5 flex-row items-center gap-1.5">
-              <View className={`size-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <View className="absolute top-3 start-3 bg-black/60 rounded-full px-3 py-1.5 flex-row items-center gap-1.5">
+              <View className={`size-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'}`} />
               <Text className="text-[10px] text-white font-bold uppercase">
                 {wsStatus === 'connected' ? t('orders.live', 'Live') : t('orders.disconnected', 'Connecting...')}
               </Text>
             </View>
+
+            {/* Driver bottom card overlay */}
+            <View
+              className="absolute bottom-0 start-0 end-0 bg-white dark:bg-gray-900 px-5 py-4 flex-row items-center gap-3"
+              style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+            >
+              <View
+                className="size-12 rounded-2xl items-center justify-center"
+                style={{ backgroundColor: '#ffc20e22' }}
+              >
+                <Feather name="truck" size={22} color="#ffc20e" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs text-gray-400 dark:text-gray-500">{t('orders.driverOnTheWay', 'Driver')}</Text>
+                <Text className="text-sm font-bold text-gray-900 dark:text-gray-100">{t('orders.driverHeading', 'On the way to you')}</Text>
+              </View>
+              <Feather name="phone" size={20} color="#ffc20e" />
+            </View>
           </View>
         ) : (
           /* Static status card when not on the way */
-          <View className="p-5 bg-brand-50/20 border-b border-gray-100 dark:border-gray-900 dark:bg-brand-950/10 items-center py-8">
-            <View className="size-16 rounded-full bg-brand-50 items-center justify-center mb-3 dark:bg-brand-950/30">
-              <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#f59e0b'} />
+          <View className="p-5 bg-white dark:bg-gray-900 items-center py-8 mx-4 my-4 rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 }}>
+            <View
+              className="size-16 rounded-full items-center justify-center mb-3"
+              style={{ backgroundColor: isCancelled ? '#fee2e2' : '#ffc20e22' }}
+            >
+              <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#ffc20e'} />
             </View>
             <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {isCancelled ? t('orders.statusCancelledMsg', 'Order Cancelled') : steps[currentStep]?.label}
@@ -224,50 +250,58 @@ export default function OrderTrackingScreen() {
 
         {/* Status Stepper Timeline */}
         {!isCancelled && (
-          <View className="p-5 border-b border-gray-50 dark:border-gray-900">
-            <Text className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">
+          <View className="mx-4 my-2 bg-white dark:bg-gray-900 rounded-3xl p-5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}>
+            <Text className="text-base font-extrabold text-gray-900 dark:text-gray-100 mb-5">
               {t('orders.timeline', 'Delivery Progress')}
             </Text>
-            <View className="gap-6 pl-2">
+            <View className="gap-5 ps-2">
               {steps.map((step, index) => {
                 const isPassed = index <= currentStep
                 const isCurrent = index === currentStep
                 return (
                   <View key={index} className="flex-row gap-4 relative">
-                    {/* Stepper line */}
+                    {/* Connector line */}
                     {index < steps.length - 1 && (
                       <View
-                        className={`absolute left-2.5 top-6 bottom-[-24px] w-[2px] ${
-                          index < currentStep ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'
-                        }`}
+                        style={{
+                          position: 'absolute',
+                          start: 11,
+                          top: 24,
+                          bottom: -20,
+                          width: 2,
+                          backgroundColor: index < currentStep ? '#ffc20e' : '#e5e7eb',
+                        }}
                       />
                     )}
 
-                    {/* Stepper Dot */}
+                    {/* Dot */}
                     <View
-                      className={`size-6 rounded-full items-center justify-center z-10 ${
-                        isCurrent
-                          ? 'bg-brand-500 border-4 border-brand-100 dark:border-brand-950'
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10,
+                        backgroundColor: isCurrent
+                          ? '#ffc20e'
                           : isPassed
-                          ? 'bg-brand-500'
-                          : 'bg-gray-100 dark:bg-gray-800'
-                      }`}
+                          ? '#ffc20e'
+                          : '#f3f4f6',
+                        borderWidth: isCurrent ? 3 : 0,
+                        borderColor: '#fff9c4',
+                      }}
                     >
                       {isPassed && !isCurrent && (
-                        <Feather name="check" size={12} color="#fff" />
+                        <Feather name="check" size={11} color="#1a1a1a" />
                       )}
                     </View>
 
-                    {/* Stepper Content */}
+                    {/* Text */}
                     <View className="flex-1 mt-0.5">
                       <Text
-                        className={`text-sm font-bold ${
-                          isCurrent
-                            ? 'text-brand-600 dark:text-brand-400'
-                            : isPassed
-                            ? 'text-gray-900 dark:text-gray-100'
-                            : 'text-gray-400'
-                        }`}
+                        className="text-sm font-bold"
+                        style={{ color: isCurrent ? '#ffc20e' : isPassed ? '#111827' : '#9ca3af' }}
                       >
                         {step.label}
                       </Text>
@@ -283,8 +317,8 @@ export default function OrderTrackingScreen() {
         )}
 
         {/* Order Details Summary */}
-        <View className="p-5 border-b border-gray-50 dark:border-gray-900 gap-3">
-          <Text className="text-base font-bold text-gray-900 dark:text-gray-100">
+        <View className="mx-4 my-2 bg-white dark:bg-gray-900 rounded-3xl p-5 gap-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}>
+          <Text className="text-base font-extrabold text-gray-900 dark:text-gray-100">
             {t('orders.summary', 'Order Items')}
           </Text>
           {/* Note: In full stack GORM database, items are linked. Since the client API returns
@@ -313,7 +347,7 @@ export default function OrderTrackingScreen() {
               {t('orders.totalPaid', 'Total')}
             </Text>
             <View className="items-end">
-              <Text className="text-base font-black text-brand-600 dark:text-brand-400">
+              <Text className="text-base font-black" style={{ color: '#ffc20e' }}>
                 ${order.subtotal_display.toFixed(2)} {order.currency_code}
               </Text>
               {order.exchange_rate > 1 && (
@@ -325,13 +359,18 @@ export default function OrderTrackingScreen() {
           </View>
         </View>
 
-        {/* Actions Bar */}
+        {/* Rate Driver button */}
         {order.status === 'delivered' && (
-          <View className="p-5 gap-3">
-            <Button
-              label={t('orders.rateDriver', 'Rate Your Driver')}
+          <View className="px-4 mb-4">
+            <Pressable
               onPress={() => router.push({ pathname: '/order/[id]/rate', params: { id: order.id } })}
-            />
+              className="items-center justify-center rounded-2xl py-4 active:opacity-90"
+              style={{ backgroundColor: '#ffc20e', shadowColor: '#ffc20e', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 6 }}
+            >
+              <Text className="text-sm font-bold text-gray-900">
+                {t('orders.rateDriver', 'Rate Your Driver')}
+              </Text>
+            </Pressable>
           </View>
         )}
       </ScrollView>

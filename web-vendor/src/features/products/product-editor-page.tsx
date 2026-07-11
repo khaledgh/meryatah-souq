@@ -9,6 +9,7 @@ import { Select, Textarea, TextInput } from '../../components/ui/input'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { toApiError } from '../../lib/api-client'
+import { resolveMediaUrl } from '../../lib/media'
 import { vendorDisplayName } from '../../schemas/vendor'
 import { useVendor } from '../auth/auth-context'
 import { useCategories } from '../categories/use-categories'
@@ -185,6 +186,29 @@ function ProductForm({
   )
 }
 
+// Thumbnail that falls back to the placeholder icon both when there's no URL
+// and when the image fails to load (broken link, media host unreachable),
+// so a bad URL degrades gracefully instead of showing a broken-image glyph.
+function ProductImageThumb({ url }: { url?: string }) {
+  const [failed, setFailed] = useState(false)
+  const resolved = resolveMediaUrl(url)
+  if (resolved && !failed) {
+    return (
+      <img
+        src={resolved}
+        alt=""
+        onError={() => { setFailed(true) }}
+        className="h-24 w-24 rounded-lg object-cover ring-1 ring-gray-200 dark:ring-gray-800"
+      />
+    )
+  }
+  return (
+    <span className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
+      <ImageIcon className="size-5" aria-hidden="true" />
+    </span>
+  )
+}
+
 function ProductImages({
   vendorId,
   productId,
@@ -206,13 +230,7 @@ function ProductImages({
           <div className="flex flex-wrap gap-3">
             {images.map((img) => (
               <div key={img.id} className="group relative">
-                {img.url ? (
-                  <img src={img.url} alt="" className="h-24 w-24 rounded-lg object-cover ring-1 ring-gray-200 dark:ring-gray-800" />
-                ) : (
-                  <span className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-700">
-                    <ImageIcon className="size-5" aria-hidden="true" />
-                  </span>
-                )}
+                <ProductImageThumb url={img.url} />
                 <button
                   type="button"
                   onClick={() => { removeImage.mutate({ productId, imageId: img.id }) }}

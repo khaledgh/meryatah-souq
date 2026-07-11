@@ -122,24 +122,12 @@ export default function CheckoutScreen() {
         coupon_code: couponCode.trim() ? couponCode.trim() : undefined,
       })
 
-      // Success
+      // Success: navigate to dedicated success screen instead of a plain Alert
       clearCart()
-      Alert.alert(
-        t('checkout.successTitle', 'Order Placed!'),
-        t('checkout.successMessage', 'Your order was successfully placed.'),
-        [
-          {
-            text: t('common.ok', 'OK'),
-            onPress: () => {
-              if (result.data?.id) {
-                router.replace({ pathname: '/order/[id]', params: { id: result.data.id } })
-              } else {
-                router.replace('/orders')
-              }
-            },
-          },
-        ]
-      )
+      router.replace({
+        pathname: '/order/success',
+        params: result.data?.id ? { orderId: result.data.id } : {},
+      })
     } catch (err: any) {
       Alert.alert(t('common.error', 'Error'), err?.user_message || t('checkout.failed', 'Failed to place order'))
     }

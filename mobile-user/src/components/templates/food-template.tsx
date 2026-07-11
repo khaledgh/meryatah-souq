@@ -6,51 +6,85 @@ import { resolveMediaUrl } from '../../lib/media'
 import { productDisplayDescription, productDisplayName } from '../../schemas/product'
 import type { ProductCardProps } from './product-card-types'
 
-// Food section template: a full-width menu-style row (image left, name +
-// description + price, add button on the right) — matches a restaurant
-// menu rather than a generic product grid.
 export function FoodProductCard({ product, accentColor, onPress, onAdd }: ProductCardProps) {
   const { t, i18n } = useTranslation()
   const hasStock = product.stock > 0
   const imageUrl = resolveMediaUrl(product.images[0]?.url)
+  const accent = accentColor ?? '#ffc20e'
 
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 rounded-3xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 shadow-sm"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        borderRadius: 20,
+        backgroundColor: '#ffffff',
+        padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
     >
-      <View className="size-20 shrink-0 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden items-center justify-center relative">
+      {/* Square food image */}
+      <View
+        style={{
+          width: 86,
+          height: 86,
+          borderRadius: 16,
+          overflow: 'hidden',
+          backgroundColor: '#f3f4f6',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          position: 'relative',
+        }}
+      >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
+          <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         ) : (
           <Feather name="image" size={28} color="#d1d5db" />
         )}
         {!hasStock && (
-          <View className="absolute inset-0 bg-black/40 items-center justify-center">
-            <Text className="text-white text-[10px] font-bold uppercase">{t('product.outOfStock', 'Out of stock')}</Text>
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
+              {t('product.outOfStock', 'Out of stock')}
+            </Text>
           </View>
         )}
       </View>
 
-      <View className="flex-1 gap-0.5">
-        <Text className="text-sm font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
+      {/* Info */}
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
           {productDisplayName(product, i18n.language)}
         </Text>
-        <Text className="text-xs text-gray-400 dark:text-gray-500" numberOfLines={2}>
+        <Text style={{ fontSize: 11, color: '#6b7280', lineHeight: 15 }} numberOfLines={2}>
           {productDisplayDescription(product, i18n.language)}
         </Text>
-        <Text className="text-sm font-bold mt-1" style={{ color: accentColor }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: accent, marginTop: 3 }}>
           ${product.price_usd.toFixed(2)}
         </Text>
       </View>
 
+      {/* Round add button */}
       <Pressable
         onPress={onAdd}
         disabled={!hasStock}
-        className="size-9 rounded-xl items-center justify-center"
-        style={{ backgroundColor: hasStock ? accentColor : undefined }}
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: hasStock ? accent : '#e5e7eb',
+          flexShrink: 0,
+        }}
       >
-        <Feather name="plus" size={18} color={hasStock ? '#fff' : '#9ca3af'} />
+        <Feather name="plus" size={20} color={hasStock ? '#1a1a1a' : '#9ca3af'} />
       </Pressable>
     </Pressable>
   )

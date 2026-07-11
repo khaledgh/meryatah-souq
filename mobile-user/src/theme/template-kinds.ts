@@ -16,7 +16,7 @@ export interface TemplateStyle {
 // Fallback accents per template kind, used when a store category has no
 // admin-set accent_color. "generic" always falls back to the app default.
 const templateKinds: Record<TemplateKind, TemplateStyle> = {
-  food: { accentColor: '#ea580c', listStyle: 'menu-list' }, // warm orange-red, appetite-friendly
+  food: { accentColor: '#ffc20e', listStyle: 'menu-list' },    // golden yellow, matches the app brand
   electronics: { accentColor: '#2563eb', listStyle: 'spec-grid' }, // cool blue, tech feel
   market: { accentColor: '#16a34a', listStyle: 'weight-grid' }, // fresh green, produce feel
   generic: { accentColor: brand[600], listStyle: 'card-grid' },
