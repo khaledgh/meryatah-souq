@@ -184,3 +184,68 @@ func (h *OrderHandler) UpdateStatusAsDriver(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusNoContent)
 }
+
+type setAvailabilityRequest struct {
+	IsOnline bool `json:"is_online"`
+}
+
+// SetAvailability handles PUT /api/v1/driver/availability (blueprint
+// §11.D2: online/offline toggle gates location streaming + push
+// eligibility; scoped to the authenticated driver only).
+func (h *OrderHandler) SetAvailability(c echo.Context) error {
+	driverID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+	var req setAvailabilityRequest
+	if err := c.Bind(&req); err != nil {
+		return apperror.BadRequest("invalid request body")
+	}
+	if appErr := h.orders.SetDriverOnline(c.Request().Context(), driverID, req.IsOnline); appErr != nil {
+		return appErr
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ListAvailableOrders handles GET /api/v1/driver/orders/available
+// (blueprint §11.D3: incoming requests list — vendor-confirmed orders with
+// no driver yet, restricted server-side to online+active+verified drivers).
+func (h *OrderHandler) ListAvailableOrders(c echo.Context) error {
+	driverID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+	orders, appErr := h.orders.ListAvailableForDrivers(c.Request().Context(), driverID)
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": orders})
+}
+
+// GetActiveOrderAsDriver handles GET /api/v1/driver/orders/active
+// (blueprint §11.D4: the driver's current in-flight delivery, if any).
+func (h *OrderHandler) GetActiveOrderAsDriver(c echo.Context) error {
+	driverID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+	order, appErr := h.orders.GetActiveForDriver(c.Request().Context(), driverID)
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": order})
+}
+
+// ListDriverHistory handles GET /api/v1/driver/orders/history (blueprint
+// §11.D5: completed/cancelled deliveries, most recent first).
+func (h *OrderHandler) ListDriverHistory(c echo.Context) error {
+	driverID, ok := appmw.UserID(c)
+	if !ok {
+		return apperror.Unauthorized("authentication required")
+	}
+	orders, appErr := h.orders.ListHistoryForDriver(c.Request().Context(), driverID)
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": orders})
+}

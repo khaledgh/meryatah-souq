@@ -74,6 +74,7 @@
     "locationPermissionDenied": "تم رفض إذن الوصول للموقع الجغرافي",
     "locationGpsRequiredTitle": "مطلوب موقع GPS",
     "locationGpsRequiredMsg": "يرجى تحديد موقعك الجغرافي عبر الـ GPS لضمان التوصيل الدقيق.",
+    "chooseOnMap": "اختر من الخريطة",
     "slotRequired": "يرجى اختيار وقت التوصيل المناسب",
     "addressRequired": "يرجى إدخال عنوان التوصيل",
     "successTitle": "تم الطلب بنجاح!",
@@ -137,6 +138,12 @@
     "title": "الكوبونات المتاحة",
     "copied": "تم نسخ رمز الكوبون للمحافظة!",
     "copyBtn": "نسخ الرمز"
+  },
+  "locationPicker": {
+    "title": "تحديد موقع التوصيل",
+    "hint": "اضغط أو اسحب الدبوس إلى موقعك الدقيق",
+    "confirm": "تأكيد الموقع",
+    "gpsFailed": "تعذر تحديد موقعك الحالي"
   },
   "profile": {
     "guest": "مستخدم زائر",

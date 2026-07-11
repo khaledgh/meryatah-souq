@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, ScrollView, Text, Pressable, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -12,11 +12,13 @@ import { useCart } from '../src/features/cart/cart-context'
 import { useVendor } from '../src/features/vendor/use-vendor'
 import { useAvailableSlots } from '../src/features/checkout/use-available-slots'
 import { usePlaceOrder } from '../src/features/checkout/use-place-order'
+import { toApiError } from '../src/lib/api-client'
 
 export default function CheckoutScreen() {
   const { t } = useTranslation()
   const router = useRouter()
   const { items, subtotal, clearCart } = useCart()
+  const params = useLocalSearchParams<{ pickedLat?: string; pickedLng?: string; pickedAddress?: string }>()
 
   const [address, setAddress] = useState('')
   const [isScheduled, setIsScheduled] = useState(false)
@@ -28,6 +30,33 @@ export default function CheckoutScreen() {
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
+
+  // Consumes the pin the user placed on /location-picker (blueprint §11.C9
+  // accuracy: refines the raw GPS fetch below with a user-confirmed exact
+  // point), then immediately clears the picked* params via setParams — if
+  // they stayed set, remounting this screen while still on the same route
+  // (e.g. returning to it from a child screen) would re-fire this effect
+  // and silently overwrite any address the user had since hand-edited.
+  useEffect(() => {
+    if (params.pickedLat && params.pickedLng) {
+      setLatitude(Number(params.pickedLat))
+      setLongitude(Number(params.pickedLng))
+      if (params.pickedAddress) {
+        setAddress(params.pickedAddress)
+      }
+      router.setParams({ pickedLat: undefined, pickedLng: undefined, pickedAddress: undefined })
+    }
+  }, [params.pickedLat, params.pickedLng, params.pickedAddress])
+
+  const openLocationPicker = () => {
+    router.push({
+      pathname: '/location-picker',
+      params:
+        latitude != null && longitude != null
+          ? { lat: String(latitude), lng: String(longitude) }
+          : {},
+    })
+  }
 
   const placeOrder = usePlaceOrder()
 
@@ -76,8 +105,8 @@ export default function CheckoutScreen() {
           }
         }
       }
-    } catch (err: any) {
-      const failMsg = err?.message || 'Failed to retrieve GPS location'
+    } catch (err) {
+      const failMsg = err instanceof Error ? err.message : 'Failed to retrieve GPS location'
       setLocationError(failMsg)
       Alert.alert(t('common.error', 'Error'), failMsg)
     } finally {
@@ -128,8 +157,8 @@ export default function CheckoutScreen() {
         pathname: '/order/success',
         params: result.data?.id ? { orderId: result.data.id } : {},
       })
-    } catch (err: any) {
-      Alert.alert(t('common.error', 'Error'), err?.user_message || t('checkout.failed', 'Failed to place order'))
+    } catch (err) {
+      Alert.alert(t('common.error', 'Error'), toApiError(err).user_message || t('checkout.failed', 'Failed to place order'))
     }
   }
 
@@ -170,35 +199,46 @@ export default function CheckoutScreen() {
             onChangeText={setAddress}
           />
           {/* GPS Coordinates Section */}
-          <View className="flex-row items-center justify-between bg-brand-50/20 border border-brand-100 rounded-2xl p-4 mt-1 dark:border-brand-950 dark:bg-brand-950/15">
-            <View className="flex-1 mr-4">
-              <Text className="text-xs font-black text-brand-700 dark:text-brand-400 uppercase tracking-wider">
-                {t('checkout.gpsLocation', 'GPS Location')}
-              </Text>
-              <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1 font-semibold">
-                {latitude && longitude
-                  ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-                  : t('checkout.noGpsFetched', 'No GPS location coordinates loaded')}
-              </Text>
-              {locationError && (
-                <Text className="text-[10px] text-red-500 mt-0.5">{locationError}</Text>
-              )}
+          <View className="bg-brand-50/20 border border-brand-100 rounded-2xl p-4 mt-1 gap-3 dark:border-brand-950 dark:bg-brand-950/15">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1 me-4">
+                <Text className="text-xs font-black text-brand-700 dark:text-brand-400 uppercase tracking-wider">
+                  {t('checkout.gpsLocation', 'GPS Location')}
+                </Text>
+                <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1 font-semibold">
+                  {latitude && longitude
+                    ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                    : t('checkout.noGpsFetched', 'No GPS location coordinates loaded')}
+                </Text>
+                {locationError && (
+                  <Text className="text-[10px] text-red-500 mt-0.5">{locationError}</Text>
+                )}
+              </View>
+              <Pressable
+                onPress={handleGetLocation}
+                disabled={locationLoading}
+                className="bg-brand-500 active:bg-brand-600 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5"
+              >
+                {locationLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Feather name="map-pin" size={14} color="#fff" />
+                    <Text className="text-xs font-bold text-white uppercase">
+                      {t('checkout.useCurrentLoc', 'Get GPS')}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
             </View>
             <Pressable
-              onPress={handleGetLocation}
-              disabled={locationLoading}
-              className="bg-brand-500 active:bg-brand-600 px-4 py-2.5 rounded-xl flex-row items-center gap-1.5"
+              onPress={openLocationPicker}
+              className="flex-row items-center justify-center gap-1.5 border border-brand-300 rounded-xl py-2.5 active:bg-brand-50 dark:border-brand-800"
             >
-              {locationLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Feather name="map-pin" size={14} color="#fff" />
-                  <Text className="text-xs font-bold text-white uppercase">
-                    {t('checkout.useCurrentLoc', 'Get GPS')}
-                  </Text>
-                </>
-              )}
+              <Feather name="map" size={14} color="#d97706" />
+              <Text className="text-xs font-bold text-brand-700 dark:text-brand-400 uppercase">
+                {t('checkout.chooseOnMap', 'Choose on Map')}
+              </Text>
             </Pressable>
           </View>
         </View>

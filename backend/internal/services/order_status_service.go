@@ -254,6 +254,131 @@ func (s *OrderService) GetForUser(ctx context.Context, userID, orderID string) (
 	return &o, nil
 }
 
+// SetDriverOnline flips the authenticated driver's availability (blueprint
+// §11.D2). Going offline intentionally does not touch driver_locations —
+// the last known position is retained (admin/history view), it's just
+// excluded from ListAvailableForDrivers' matching pool while offline.
+func (s *OrderService) SetDriverOnline(ctx context.Context, driverID string, isOnline bool) *apperror.AppError {
+	if err := s.db.WithContext(ctx).Table("users").Where("id = ? AND role = 'driver'", driverID).
+		Update("is_online", isOnline).Error; err != nil {
+		return apperror.Internal(fmt.Errorf("order: set driver online: %w", err))
+	}
+	return nil
+}
+
+// AvailableOrder is a lighter projection than models.Order for the driver's
+// incoming-requests list (blueprint §11.D3: "pickup vendor, drop-off,
+// distance, payout"), since a driver deciding whether to accept needs
+// vendor identity, not the full order/currency/commission snapshot.
+type AvailableOrder struct {
+	ID                string  `json:"id"`
+	VendorID          string  `json:"vendor_id"`
+	VendorName        string  `json:"vendor_name"`
+	VendorLongitude   float64 `json:"vendor_longitude"`
+	VendorLatitude    float64 `json:"vendor_latitude"`
+	DeliveryLongitude float64 `json:"delivery_longitude"`
+	DeliveryLatitude  float64 `json:"delivery_latitude"`
+	SubtotalUSD       float64 `json:"subtotal_usd"`
+	PlacedAt          string  `json:"placed_at"`
+}
+
+// ListAvailableForDrivers returns orders a driver could accept — vendor has
+// confirmed (accepted/preparing) but no driver assigned yet — restricted to
+// callers who are online, active, and phone-verified (blueprint: "only
+// active+verified drivers receive requests"). Read-only: accepting still
+// goes through AssignDriver's concurrency-safe conditional UPDATE.
+func (s *OrderService) ListAvailableForDrivers(ctx context.Context, driverID string) ([]AvailableOrder, *apperror.AppError) {
+	var eligible bool
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT is_active AND phone_verified AND is_online FROM users WHERE id = ? AND role = 'driver'
+	`, driverID).Scan(&eligible).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("order: check driver eligibility: %w", err))
+	}
+	if !eligible {
+		return []AvailableOrder{}, nil
+	}
+
+	var orders []AvailableOrder
+	err = s.db.WithContext(ctx).Raw(`
+		SELECT o.id, o.vendor_id,
+		       COALESCE(v.name_i18n->>'en', '') AS vendor_name,
+		       ST_X(v.location::geometry) AS vendor_longitude, ST_Y(v.location::geometry) AS vendor_latitude,
+		       ST_X(o.delivery_point::geometry) AS delivery_longitude, ST_Y(o.delivery_point::geometry) AS delivery_latitude,
+		       o.subtotal_usd, o.placed_at
+		FROM orders o
+		JOIN vendors v ON v.id = o.vendor_id
+		WHERE o.status IN ('accepted', 'preparing') AND o.driver_id IS NULL
+		ORDER BY o.placed_at ASC
+	`).Scan(&orders).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("order: list available for drivers: %w", err))
+	}
+	return orders, nil
+}
+
+// ActiveDriverOrder extends models.Order with the vendor identity/pickup
+// coordinates the D4 Active Order screen needs for its map (pickup→dropoff)
+// and vendor info card — models.Order itself carries no vendor name or
+// location, only vendor_id, so a plain orderSelectColumns query leaves the
+// driver app unable to show anything but a raw UUID (the same gap
+// ListAvailableForDrivers already solves for D3 via its own join).
+type ActiveDriverOrder struct {
+	models.Order
+	VendorName      string  `json:"vendor_name"`
+	VendorLongitude float64 `json:"vendor_longitude"`
+	VendorLatitude  float64 `json:"vendor_latitude"`
+}
+
+// GetActiveForDriver returns the driver's single in-flight order, or
+// (nil, nil) if the driver has none (blueprint §11.D4). Having no active
+// order is a normal, expected state for an idle driver — not an error —
+// unlike GetForUser/loadOrderTx's NotFound, which represents a genuinely
+// missing order; the handler returns 200 with data: null so the mobile
+// client can render an empty state without special-casing a 404.
+func (s *OrderService) GetActiveForDriver(ctx context.Context, driverID string) (*ActiveDriverOrder, *apperror.AppError) {
+	var o ActiveDriverOrder
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT id, user_id, vendor_id, driver_id, status, subtotal_usd, currency_code,
+		       exchange_rate, subtotal_display, commission_pct, commission_usd, coupon_id,
+		       scheduled_for, placed_at, delivered_at,
+		       ST_X(o.delivery_point::geometry) AS delivery_longitude,
+		       ST_Y(o.delivery_point::geometry) AS delivery_latitude,
+		       COALESCE(v.name_i18n->>'en', '') AS vendor_name,
+		       ST_X(v.location::geometry) AS vendor_longitude, ST_Y(v.location::geometry) AS vendor_latitude
+		FROM orders o
+		JOIN vendors v ON v.id = o.vendor_id
+		WHERE o.driver_id = ? AND o.status IN ('accepted', 'preparing', 'on_the_way')
+		ORDER BY o.placed_at DESC LIMIT 1
+	`, driverID).Scan(&o).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("order: get active for driver: %w", err))
+	}
+	if o.ID == "" {
+		return nil, nil
+	}
+	var items []models.OrderItem
+	if err := s.db.WithContext(ctx).Where("order_id = ?", o.ID).Find(&items).Error; err == nil {
+		o.Items = items
+	}
+	return &o, nil
+}
+
+// ListHistoryForDriver returns a driver's completed/cancelled deliveries,
+// most recent first (blueprint §11.D5).
+func (s *OrderService) ListHistoryForDriver(ctx context.Context, driverID string) ([]models.Order, *apperror.AppError) {
+	var orders []models.Order
+	err := s.db.WithContext(ctx).Raw(
+		orderSelectColumns+` WHERE driver_id = ? AND status IN ('delivered', 'cancelled') ORDER BY placed_at DESC`,
+		driverID,
+	).Scan(&orders).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("order: list history for driver: %w", err))
+	}
+	s.populateOrderItems(ctx, orders)
+	return orders, nil
+}
+
 // Helper to batch populate order items to prevent N+1 queries.
 func (s *OrderService) populateOrderItems(ctx context.Context, orders []models.Order) {
 	if len(orders) == 0 {

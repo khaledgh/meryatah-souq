@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "سائق سوق مرياطة"
+  },
+  "common": {
+    "loading": "جاري التحميل…",
+    "error": "حدث خطأ ما.",
+    "retry": "إعادة المحاولة",
+    "empty": "لا يوجد شيء هنا بعد.",
+    "continue": "متابعة",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "ok": "موافق",
+    "skip": "تخطي",
+    "next": "التالي"
+  },
+  "language": {
+    "title": "اختر لغتك",
+    "subtitle": "يمكنك تغيير هذا لاحقاً من الإعدادات.",
+    "english": "English",
+    "arabic": "العربية",
+    "reloadTitle": "إعادة التشغيل مطلوبة",
+    "reloadMessage": "يحتاج التطبيق إلى إعادة التشغيل لتغيير اتجاه النص.",
+    "reloadConfirm": "أعد التشغيل الآن"
+  },
+  "auth": {
+    "phoneTitle": "أدخل رقم هاتفك",
+    "phoneSubtitle": "سنرسل لك رمز التحقق.",
+    "phoneLabel": "رقم الهاتف",
+    "phonePlaceholder": "+961 …",
+    "sendCode": "أرسل الرمز",
+    "otpTitle": "أدخل الرمز",
+    "otpSubtitle": "تم الإرسال إلى {{phone}}.",
+    "otpLabel": "رمز التحقق",
+    "verify": "تحقق",
+    "resend": "إعادة إرسال الرمز",
+    "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
+    "registerTitle": "أنشئ حساب السائق الخاص بك",
+    "registerSubtitle": "فقط بعض التفاصيل للإنهاء.",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "password": "كلمة المرور",
+    "createAccount": "إنشاء حساب",
+    "notADriver": "هذا الحساب غير مسجل كسائق.",
+    "notADriverDesc": "يرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ."
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "requests": "الطلبات",
+    "active": "النشط",
+    "history": "السجل",
+    "profile": "الملف الشخصي"
+  },
+  "availability": {
+    "title": "التوفر",
+    "online": "متصل",
+    "offline": "غير متصل",
+    "onlineDesc": "أنت ظاهر للطلبات القريبة ويتم بث موقعك.",
+    "offlineDesc": "لن تستلم طلبات توصيل جديدة.",
+    "goOnline": "اتصال",
+    "goOffline": "قطع الاتصال",
+    "locationPermissionTitle": "إذن الموقع مطلوب",
+    "locationPermissionDesc": "يحتاج تطبيق سائق سوق مرياطة إلى موقعك للاتصال واستلام طلبات التوصيل.",
+    "locationPermissionDenied": "تم رفض إذن الموقع. فعّله من الإعدادات للاتصال.",
+    "hasActiveOrder": "أنهِ توصيلتك النشطة قبل قطع الاتصال."
+  },
+  "requests": {
+    "title": "الطلبات الواردة",
+    "empty": "لا توجد طلبات توصيل حالياً.",
+    "emptyOffline": "اتصل لرؤية طلبات التوصيل.",
+    "emptyActiveOrder": "أنهِ توصيلتك الحالية لرؤية طلبات جديدة.",
+    "distanceToPickup": "{{km}} كم إلى نقطة الاستلام",
+    "payout": "العائد",
+    "accept": "قبول",
+    "decline": "رفض",
+    "acceptError": "فشل قبول هذا الطلب. يرجى المحاولة مرة أخرى.",
+    "alreadyAssigned": "سائق آخر سبقك إلى هذا الطلب.",
+    "placedAt": "تم الطلب {{time}}"
+  },
+  "activeOrder": {
+    "title": "التوصيل النشط",
+    "empty": "ليس لديك توصيل نشط.",
+    "emptyDesc": "اقبل طلباً لبدء التوصيل.",
+    "pickup": "الاستلام",
+    "dropoff": "التسليم",
+    "customer": "الزبون",
+    "vendor": "المتجر",
+    "startDelivery": "بدء التوصيل",
+    "markDelivered": "تم التسليم",
+    "statusOnTheWay": "في الطريق إلى الزبون",
+    "statusAccepted": "متجه إلى المتجر",
+    "live": "مباشر",
+    "disconnected": "جاري الاتصال...",
+    "confirmDeliveredTitle": "تأكيد التسليم",
+    "confirmDeliveredMsg": "هل تريد تعليم هذا الطلب كمسلَّم؟",
+    "payout": "العائد",
+    "you": "أنت"
+  },
+  "orders": {
+    "status": {
+      "pending": "تم تقديم الطلب",
+      "accepted": "تم القبول",
+      "preparing": "جاري التحضير",
+      "on_the_way": "في الطريق",
+      "delivered": "تم التوصيل",
+      "cancelled": "ملغى"
+    }
+  },
+  "history": {
+    "title": "السجل والأرباح",
+    "empty": "لا توجد توصيلات مكتملة بعد.",
+    "earningsSummary": "ملخص الأرباح",
+    "totalDeliveries": "التوصيلات",
+    "averageRating": "متوسط التقييم",
+    "recentRatings": "أحدث التقييمات",
+    "noRatings": "لا توجد تقييمات بعد.",
+    "filterAll": "الكل",
+    "filterDelivered": "تم التوصيل",
+    "filterCancelled": "ملغى"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "language": "لغة التطبيق",
+    "logoutBtn": "تسجيل الخروج",
+    "logoutTitle": "تسجيل الخروج",
+    "logoutConfirm": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+    "logoutConfirmBtn": "تسجيل الخروج"
+  }
+}

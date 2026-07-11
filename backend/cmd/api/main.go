@@ -251,6 +251,10 @@ func main() {
 	driverGroup := v1.Group("/driver", requireAuth, requireDriver)
 	driverGroup.POST("/orders/:orderId/accept", orderHandler.AcceptAsDriver)
 	driverGroup.PUT("/orders/:orderId/status", orderHandler.UpdateStatusAsDriver)
+	driverGroup.PUT("/availability", orderHandler.SetAvailability)
+	driverGroup.GET("/orders/available", orderHandler.ListAvailableOrders)
+	driverGroup.GET("/orders/active", orderHandler.GetActiveOrderAsDriver)
+	driverGroup.GET("/orders/history", orderHandler.ListDriverHistory)
 
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	v1.POST("/push-tokens", notificationHandler.RegisterPushToken, requireAuth)

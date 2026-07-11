@@ -21,6 +21,7 @@ type User struct {
 	Role            UserRole   `gorm:"column:role;not null" json:"role"`
 	PreferredLocale *string    `gorm:"column:preferred_locale" json:"preferred_locale,omitempty"`
 	IsActive        bool       `gorm:"column:is_active;not null" json:"is_active"`
+	IsOnline        bool       `gorm:"column:is_online;not null" json:"is_online"`
 	FailedLogins    int        `gorm:"column:failed_logins;not null" json:"-"`
 	LockedUntil     *time.Time `gorm:"column:locked_until" json:"-"`
 	CreatedAt       time.Time  `gorm:"column:created_at;not null" json:"created_at"`

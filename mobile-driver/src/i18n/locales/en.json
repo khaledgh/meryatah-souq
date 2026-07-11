@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "Meryata Souq Driver"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "empty": "Nothing here yet.",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "back": "Back",
+    "ok": "OK",
+    "skip": "Skip",
+    "next": "Next"
+  },
+  "language": {
+    "title": "Choose your language",
+    "subtitle": "You can change this later in Settings.",
+    "english": "English",
+    "arabic": "العربية",
+    "reloadTitle": "Restart required",
+    "reloadMessage": "The app needs to restart to switch text direction.",
+    "reloadConfirm": "Restart now"
+  },
+  "auth": {
+    "phoneTitle": "Enter your phone number",
+    "phoneSubtitle": "We'll send you a verification code.",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "+961 …",
+    "sendCode": "Send code",
+    "otpTitle": "Enter the code",
+    "otpSubtitle": "Sent to {{phone}}.",
+    "otpLabel": "Verification code",
+    "verify": "Verify",
+    "resend": "Resend code",
+    "resendIn": "Resend in {{seconds}}s",
+    "registerTitle": "Create your driver account",
+    "registerSubtitle": "Just a few details to finish.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "createAccount": "Create account",
+    "notADriver": "This account is not registered as a driver.",
+    "notADriverDesc": "Please contact support if you believe this is a mistake."
+  },
+  "nav": {
+    "home": "Home",
+    "requests": "Requests",
+    "active": "Active",
+    "history": "History",
+    "profile": "Profile"
+  },
+  "availability": {
+    "title": "Availability",
+    "online": "Online",
+    "offline": "Offline",
+    "onlineDesc": "You're visible to nearby orders and streaming your location.",
+    "offlineDesc": "You will not receive new delivery requests.",
+    "goOnline": "Go Online",
+    "goOffline": "Go Offline",
+    "locationPermissionTitle": "Location permission required",
+    "locationPermissionDesc": "Meryata Souq Driver needs your location to go online and receive delivery requests.",
+    "locationPermissionDenied": "Location permission was denied. Enable it in Settings to go online.",
+    "hasActiveOrder": "Finish your active delivery before going offline."
+  },
+  "requests": {
+    "title": "Incoming Requests",
+    "empty": "No delivery requests right now.",
+    "emptyOffline": "Go online to see delivery requests.",
+    "emptyActiveOrder": "Finish your current delivery to see new requests.",
+    "distanceToPickup": "{{km}} km to pickup",
+    "payout": "Payout",
+    "accept": "Accept",
+    "decline": "Decline",
+    "acceptError": "Failed to accept this order. Please try again.",
+    "alreadyAssigned": "Someone else got there first.",
+    "placedAt": "Placed {{time}}"
+  },
+  "activeOrder": {
+    "title": "Active Delivery",
+    "empty": "You have no active delivery.",
+    "emptyDesc": "Accept a request to start a delivery.",
+    "pickup": "Pickup",
+    "dropoff": "Drop-off",
+    "customer": "Customer",
+    "vendor": "Store",
+    "startDelivery": "Start Delivery",
+    "markDelivered": "Mark Delivered",
+    "statusOnTheWay": "On the way to customer",
+    "statusAccepted": "Heading to store",
+    "live": "Live",
+    "disconnected": "Connecting...",
+    "confirmDeliveredTitle": "Confirm delivery",
+    "confirmDeliveredMsg": "Mark this order as delivered?",
+    "payout": "Payout",
+    "you": "You"
+  },
+  "orders": {
+    "status": {
+      "pending": "Order Placed",
+      "accepted": "Accepted",
+      "preparing": "Preparing",
+      "on_the_way": "On the Way",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    }
+  },
+  "history": {
+    "title": "History & Earnings",
+    "empty": "No completed deliveries yet.",
+    "earningsSummary": "Earnings Summary",
+    "totalDeliveries": "Deliveries",
+    "averageRating": "Average Rating",
+    "recentRatings": "Recent Ratings",
+    "noRatings": "No ratings yet.",
+    "filterAll": "All",
+    "filterDelivered": "Delivered",
+    "filterCancelled": "Cancelled"
+  },
+  "profile": {
+    "title": "Profile",
+    "language": "App Language",
+    "logoutBtn": "Logout",
+    "logoutTitle": "Logout",
+    "logoutConfirm": "Are you sure you want to log out?",
+    "logoutConfirmBtn": "Logout"
+  }
+}

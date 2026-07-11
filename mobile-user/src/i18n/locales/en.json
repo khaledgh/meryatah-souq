@@ -74,6 +74,7 @@
     "locationPermissionDenied": "Permission to access location was denied",
     "locationGpsRequiredTitle": "GPS Location Required",
     "locationGpsRequiredMsg": "Please fetch your current GPS coordinates to ensure accurate delivery.",
+    "chooseOnMap": "Choose on Map",
     "slotRequired": "Please select a delivery slot",
     "addressRequired": "Please enter a delivery address",
     "successTitle": "Order Placed!",
@@ -137,6 +138,12 @@
     "title": "Available Coupons",
     "copied": "Promo code copied to clipboard!",
     "copyBtn": "Copy Code"
+  },
+  "locationPicker": {
+    "title": "Set Delivery Location",
+    "hint": "Tap or drag the pin to your exact location",
+    "confirm": "Confirm Location",
+    "gpsFailed": "Could not get your current location"
   },
   "profile": {
     "guest": "Guest User",

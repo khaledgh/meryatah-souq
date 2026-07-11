@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Meryata Souq Driver",
+    "slug": "meryata-souq-driver",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "meryatasouqdriver",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "extra": {
+      "apiBaseUrl": "http://localhost:8080/api/v1"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.meryatasouq.driver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Meryata Souq Driver needs your location to show you nearby delivery requests and to share your live position with customers while you're delivering an order.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Meryata Souq Driver needs your location to share your live position with customers while you're on the way to deliver an order."
+      }
+    },
+    "android": {
+      "package": "com.meryatasouq.driver",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Meryata Souq Driver needs your location to show nearby delivery requests and share your live position with customers while delivering."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf",
+            "./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
+          ]
+        }
+      ],
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
