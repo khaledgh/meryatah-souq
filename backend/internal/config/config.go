@@ -30,7 +30,9 @@ type Config struct {
 	OTPTTLSeconds int
 	OTPLength     int
 
-	SMSAPIKey      string
+	SMSUsername    string
+	SMSPassword    string
+	SMSSenderID    string
 	WhatsAppAPIKey string
 
 	OneSignalAppID  string
@@ -79,7 +81,9 @@ func Load() (*Config, error) {
 
 		JWTSecret: os.Getenv("JWT_SECRET"),
 
-		SMSAPIKey:      os.Getenv("SMS_API_KEY"),
+		SMSUsername:    os.Getenv("SMS_USERNAME"),
+		SMSPassword:    os.Getenv("SMS_PASSWORD"),
+		SMSSenderID:    os.Getenv("SMS_SENDER_ID"),
 		WhatsAppAPIKey: os.Getenv("WHATSAPP_API_KEY"),
 
 		OneSignalAppID:  os.Getenv("ONESIGNAL_APP_ID"),

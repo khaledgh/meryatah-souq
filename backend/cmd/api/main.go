@@ -74,7 +74,7 @@ func main() {
 	settingsService := services.NewSettingsService(db, cache)
 
 	otpRegistry := otp.NewRegistry(
-		otp.NewSMSProvider(cfg.SMSAPIKey),
+		otp.NewSMSProvider(cfg.SMSUsername, cfg.SMSPassword, cfg.SMSSenderID),
 		otp.NewWhatsAppProvider(cfg.WhatsAppAPIKey),
 	)
 	otpService := services.NewOTPService(db, redisClient, cache, otpRegistry)
