@@ -39,6 +39,7 @@ type Order struct {
 	DeliveryLongitude float64     `gorm:"column:delivery_longitude" json:"delivery_longitude"`
 	DeliveryLatitude  float64     `gorm:"column:delivery_latitude" json:"delivery_latitude"`
 	Items             []OrderItem `gorm:"-" json:"items,omitempty"`
+	DriverName        string      `gorm:"-" json:"driver_name,omitempty"`
 }
 
 func (Order) TableName() string { return "orders" }

@@ -252,6 +252,11 @@ func (s *OrderService) GetForUser(ctx context.Context, userID, orderID string) (
 	if err := s.db.WithContext(ctx).Where("order_id = ?", o.ID).Find(&items).Error; err == nil {
 		o.Items = items
 	}
+	if o.DriverID != nil && *o.DriverID != "" {
+		var name string
+		_ = s.db.WithContext(ctx).Raw(`SELECT first_name || ' ' || last_name FROM users WHERE id = ?`, *o.DriverID).Row().Scan(&name)
+		o.DriverName = name
+	}
 	return &o, nil
 }
 

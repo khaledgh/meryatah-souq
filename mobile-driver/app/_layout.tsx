@@ -20,6 +20,7 @@ import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
 // registered from inside a component.
 import '../src/features/tracking/location-task'
 import { TrackingController } from '../src/features/tracking/tracking-controller'
+import { OneSignal } from 'react-native-onesignal'
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -44,6 +45,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     setColorScheme('dark')
+  }, [])
+
+  useEffect(() => {
+    const appId = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID
+    if (appId) {
+      OneSignal.initialize(appId)
+      OneSignal.Notifications.requestPermission(true)
+    }
   }, [])
 
   // Icon fonts (Feather, Ionicons) are embedded natively via the expo-font

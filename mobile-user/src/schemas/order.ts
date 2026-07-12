@@ -39,6 +39,7 @@ export const orderSchema = z.object({
   // Frontend helpers
   vendor_name: z.string().optional(),
   items: z.array(orderItemSchema).nullable().optional(),
+  driver_name: z.string().optional(),
 })
 
 export const orderListSchema = z.object({

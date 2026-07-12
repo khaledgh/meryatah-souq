@@ -15,6 +15,7 @@ import { CartProvider } from '../src/features/cart/cart-context'
 import { DeliveryLocationProvider } from '../src/features/location/delivery-location-context'
 import '../src/i18n/config'
 import { useLocaleBootstrap } from '../src/i18n/use-locale-bootstrap'
+import { OneSignal } from 'react-native-onesignal'
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -39,6 +40,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     setColorScheme('dark')
+  }, [])
+
+  useEffect(() => {
+    const appId = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID
+    if (appId) {
+      OneSignal.initialize(appId)
+      OneSignal.Notifications.requestPermission(true)
+    }
   }, [])
 
   // Icon fonts (Feather, Ionicons) are embedded natively via the expo-font

@@ -280,7 +280,7 @@ export default function OrderTrackingScreen() {
                   <Layer
                     id="route-line"
                     type="line"
-                    style={{ lineColor: '#2563eb', lineWidth: 4, lineCap: 'round', lineJoin: 'round' }}
+                    style={{ lineColor: '#ffc20e', lineWidth: 5, lineCap: 'round', lineJoin: 'round' }}
                   />
                 </GeoJSONSource>
               ) : null}
@@ -297,7 +297,7 @@ export default function OrderTrackingScreen() {
               ) : null}
               {driverLocation ? (
                 <Marker id="driver" lngLat={[driverLocation.longitude, driverLocation.latitude]}>
-                  <MapPin kind="driver" />
+                  <MapPin kind="driver" driverName={order.driver_name} />
                 </Marker>
               ) : null}
             </MapView>

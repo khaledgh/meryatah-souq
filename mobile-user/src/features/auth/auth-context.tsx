@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Platform } from 'react-native'
+import { OneSignal } from 'react-native-onesignal'
 
 import { apiClient, refreshSession } from '../../lib/api-client'
 import { clearSession, getGuestMode, getRefreshToken, setAccessToken, setGuestMode, setRefreshToken } from '../../lib/auth-storage'
@@ -77,6 +79,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      const registerToken = (subId: string | null | undefined) => {
+        if (subId) {
+          apiClient.post('/push-tokens', {
+            player_id: subId,
+            platform: Platform.OS,
+          }).catch(() => {
+            // best-effort
+          })
+        }
+      }
+
+      const currentId = OneSignal.User.pushSubscription.getPushSubscriptionId()
+      registerToken(currentId)
+
+      const listener = (event: { current: { id?: string | null } }) => {
+        registerToken(event.current.id)
+      }
+      OneSignal.User.pushSubscription.addEventListener('change', listener)
+      return () => {
+        OneSignal.User.pushSubscription.removeEventListener('change', listener)
+      }
+    }
+  }, [user])
 
   const requestOtp = useCallback(async (phone: string) => {
     await apiClient.post('/auth/request-otp', { phone })
