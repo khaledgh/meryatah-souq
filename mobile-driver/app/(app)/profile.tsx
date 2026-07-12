@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { reloadAppAsync } from 'expo'
 import { useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -78,6 +78,27 @@ export default function ProfileScreen() {
         </View>
 
         <View className="px-5 gap-3">
+          <Pressable
+            onPress={() => {
+              Linking.openURL('meryatasouq://').catch(() => {
+                Alert.alert(
+                  t('common.error', 'Error'),
+                  t('profile.userAppNotInstalled', 'User App is not installed.')
+                )
+              })
+            }}
+            className="flex-row items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 px-4 py-4"
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 }}
+          >
+            <View className="size-10 rounded-full items-center justify-center" style={{ backgroundColor: '#ffc20e22' }}>
+              <Feather name="shopping-bag" size={18} color="#ffc20e" />
+            </View>
+            <Text className="flex-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {t('profile.switchToUser', 'Switch to User App')}
+            </Text>
+            <Feather name="chevron-right" size={16} color="#9ca3af" />
+          </Pressable>
+
           <Pressable
             onPress={busy ? undefined : () => void toggleLanguage()}
             className="flex-row items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 px-4 py-4"

@@ -130,7 +130,7 @@ func (s *OrderService) UpdateStatusAsDriver(ctx context.Context, driverID, order
 // app can show an accurate message rather than one conflated string.
 func (s *OrderService) AssignDriver(ctx context.Context, orderID, driverID string) *apperror.AppError {
 	result := s.db.WithContext(ctx).Exec(`
-		UPDATE orders SET driver_id = ? WHERE id = ? AND driver_id IS NULL AND status = 'accepted'
+		UPDATE orders SET driver_id = ? WHERE id = ? AND driver_id IS NULL AND status IN ('accepted', 'preparing')
 	`, driverID, orderID)
 	if result.Error != nil {
 		return apperror.Internal(fmt.Errorf("order: assign driver: %w", result.Error))

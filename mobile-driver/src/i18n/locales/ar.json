@@ -142,6 +142,8 @@
     "logoutBtn": "تسجيل الخروج",
     "logoutTitle": "تسجيل الخروج",
     "logoutConfirm": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
-    "logoutConfirmBtn": "تسجيل الخروج"
+    "logoutConfirmBtn": "تسجيل الخروج",
+    "switchToUser": "الانتقال إلى تطبيق المستخدم",
+    "userAppNotInstalled": "تطبيق المستخدم غير مثبت."
   }
 }

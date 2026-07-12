@@ -134,6 +134,8 @@
     "logoutBtn": "Logout",
     "logoutTitle": "Logout",
     "logoutConfirm": "Are you sure you want to log out?",
-    "logoutConfirmBtn": "Logout"
+    "logoutConfirmBtn": "Logout",
+    "switchToUser": "Switch to User App",
+    "userAppNotInstalled": "User App is not installed."
   }
 }

@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { reloadAppAsync } from 'expo'
@@ -121,6 +121,18 @@ export default function ProfileScreen() {
       label: t('profile.myProfile', 'My Profile'),
       onPress: () => {},
     },
+    ...(user?.role === 'driver' ? [{
+      icon: 'truck' as const,
+      label: t('profile.switchToDriver', 'Switch to Driver App'),
+      onPress: () => {
+        Linking.openURL('meryatasouqdriver://').catch(() => {
+          Alert.alert(
+            t('common.error', 'Error'),
+            t('profile.driverAppNotInstalled', 'Driver App is not installed.')
+          )
+        })
+      }
+    }] : []),
     {
       icon: 'shopping-bag',
       label: t('profile.myOrders', 'My Orders'),
