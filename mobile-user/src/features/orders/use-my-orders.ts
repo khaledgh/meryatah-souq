@@ -26,6 +26,7 @@ export function useOrder(orderId: string | undefined) {
       return orderDetailSchema.parse(response.data).data
     },
     enabled: !!orderId,
+    refetchInterval: 5000,
   })
 }
 

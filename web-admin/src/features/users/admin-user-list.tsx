@@ -1,4 +1,4 @@
-import { Plus, RotateCcw, ShieldCheck, ShieldOff } from 'lucide-react'
+import { Plus, RotateCcw, ShieldCheck, ShieldOff, Star, Store, MapPin, User } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +11,7 @@ import { DataTable, type Column } from '../../components/data-table'
 import { ErrorState, LoadingState } from '../../components/query-state'
 import { PageHeader } from '../../components/ui/page-header'
 import { userDisplayName, type AdminUser } from '../../schemas/user'
-import { useAdminUsers, useCreateDriver, useCreateUser, useResetLockout, useSetUserActive, type CreateUserInput } from './use-admin-users'
+import { useAdminUsers, useCreateDriver, useCreateUser, useResetLockout, useSetUserActive, useDriverDetail, type CreateUserInput } from './use-admin-users'
 
 // Shared list view for A6 (Drivers) and A7 (Users) — both blueprint
 // sections use the same shape (list + activate/deactivate + reset
@@ -24,6 +24,7 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
   const createUser = useCreateUser()
   const createDriver = useCreateDriver()
 
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const {
     register,
@@ -95,6 +96,17 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
           >
             <RotateCcw className="size-3.5" aria-hidden="true" /> {t('common.resetLockout')}
           </button>
+          {role === 'driver' && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDriverId(u.id)
+              }}
+              className="text-brand-600 hover:underline dark:text-brand-400 font-semibold"
+            >
+              {t('drivers.checkDetails', 'Check Details')}
+            </button>
+          )}
         </div>
       ),
     },
@@ -170,6 +182,147 @@ export function AdminUserList({ role, title }: { role: 'user' | 'driver'; title:
           </div>
         </form>
       </Modal>
+
+      {selectedDriverId && (
+        <DriverDetailModal
+          driverId={selectedDriverId}
+          onClose={() => { setSelectedDriverId(null) }}
+        />
+      )}
     </div>
+  )
+}
+
+function DriverDetailModal({ driverId, onClose }: { driverId: string; onClose: () => void }) {
+  const { t } = useTranslation()
+  const { data, isLoading, isError, error } = useDriverDetail(driverId)
+
+  return (
+    <Modal
+      open={!!driverId}
+      onClose={onClose}
+      title={t('drivers.detailTitle', 'Driver Details & Order History')}
+      className="max-w-2xl"
+    >
+      {isLoading ? (
+        <LoadingState />
+      ) : isError ? (
+        <ErrorState error={error} />
+      ) : data ? (
+        <div className="space-y-6">
+          {/* Driver profile summary */}
+          <div className="flex flex-col sm:flex-row justify-between gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {data.user.first_name} {data.user.last_name}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {t('auth.phoneLabel')}: {data.user.phone}
+              </p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Badge variant={data.user.is_active ? 'success' : 'neutral'}>
+                {data.user.is_active ? t('common.active') : t('common.inactive')}
+              </Badge>
+              <Badge variant={data.user.is_online ? 'brand' : 'neutral'}>
+                {data.user.is_online ? t('drivers.online', 'Online') : t('drivers.offline', 'Offline')}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Orders Section */}
+          <div>
+            <h4 className="text-md font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              {t('drivers.ordersHistory', 'Delivery History')} ({data.orders.length})
+            </h4>
+
+            {data.orders.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+                {t('drivers.noOrders', 'No orders assigned to this driver yet.')}
+              </p>
+            ) : (
+              <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
+                {data.orders.map((order) => (
+                  <div key={order.id} className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3 bg-white dark:bg-gray-900">
+                    {/* Header: Order ID + Status */}
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          Order #{order.id.substring(0, 8)}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 block">
+                          {new Date(order.placed_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <Badge variant={order.status === 'delivered' ? 'success' : order.status === 'cancelled' ? 'neutral' : 'brand'}>
+                        {order.status}
+                      </Badge>
+                    </div>
+
+                    {/* Store + Customer */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <Store className="size-4 text-gray-400" />
+                        <span><strong>From:</strong> {order.vendor.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <User className="size-4 text-gray-400" />
+                        <span>
+                          <strong>To:</strong> {order.customer.first_name} {order.customer.last_name} ({order.customer.phone})
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>Payout:</strong> ${order.subtotal_display.toFixed(2)} {order.currency_code}
+                    </div>
+
+                    {/* Customer Comment */}
+                    <div className="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm">
+                      <div className="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        <Star className="size-4 text-yellow-500 fill-yellow-500" />
+                        <span>{order.rating ? `${order.rating.score} / 5` : 'No rating'}</span>
+                      </div>
+                      {order.rating && order.rating.comment ? (
+                        <p className="text-gray-600 dark:text-gray-400 italic">"{order.rating.comment}"</p>
+                      ) : (
+                        <p className="text-gray-400 dark:text-gray-500 italic">No comment left.</p>
+                      )}
+                    </div>
+
+                    {/* Tracking History */}
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                        <MapPin className="size-3.5 text-brand-500" />
+                        Tracking History ({order.tracking_history?.length ?? 0} points)
+                      </span>
+                      {order.tracking_history && order.tracking_history.length > 0 ? (
+                        <div className="text-[11px] font-mono bg-gray-50 dark:bg-gray-800 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700 max-h-32 overflow-y-auto space-y-1">
+                          {order.tracking_history.map((t, idx) => (
+                            <div key={idx} className="flex justify-between text-gray-500 dark:text-gray-400">
+                              <span>
+                                {new Date(t.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
+                              <span>
+                                Lat: {t.latitude.toFixed(6)}, Lng: {t.longitude.toFixed(6)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 italic block pl-5">
+                          No location updates recorded for this order.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </Modal>
   )
 }

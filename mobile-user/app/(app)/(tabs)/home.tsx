@@ -25,10 +25,10 @@ import { useAuth } from '../../../src/features/auth/auth-context'
 import { useDeliveryLocation } from '../../../src/features/location/delivery-location-context'
 
 const ACCENT = '#ffc20e'
-const TEXT_DARK = '#111827'
-const TEXT_MUTED = '#6b7280'
-const BG = '#f5f5f5'
-const CARD = '#ffffff'
+const TEXT_DARK = '#f9fafb'
+const TEXT_MUTED = '#9ca3af'
+const BG = '#0f111a'
+const CARD = '#1e2235'
 
 export default function HomeScreen() {
   const { t, i18n } = useTranslation()
@@ -309,7 +309,7 @@ function VendorCard({ vendor, onPress }: { vendor: VendorWithStatus; onPress: ()
           width: 64,
           height: 64,
           borderRadius: 16,
-          backgroundColor: '#f3f4f6',
+          backgroundColor: '#252b44',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
@@ -345,10 +345,10 @@ function VendorCard({ vendor, onPress }: { vendor: VendorWithStatus; onPress: ()
           borderRadius: 20,
           paddingHorizontal: 10,
           paddingVertical: 4,
-          backgroundColor: isOpen ? '#dcfce7' : '#f3f4f6',
+          backgroundColor: isOpen ? '#16a34a22' : '#252b44',
         }}
       >
-        <Text style={{ fontSize: 11, fontWeight: '700', color: isOpen ? '#16a34a' : TEXT_MUTED }}>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: isOpen ? '#4ade80' : TEXT_MUTED }}>
           {isOpen ? t('home.open', 'Open') : t('home.closed', 'Closed')}
         </Text>
       </View>

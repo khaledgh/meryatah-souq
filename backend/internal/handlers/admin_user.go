@@ -168,3 +168,14 @@ func (h *AdminUserHandler) ListVendorUsers(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, echo.Map{"data": users})
 }
+
+// GetDriverDetail handles GET /api/v1/admin/drivers/:driverId/details (super_admin only).
+func (h *AdminUserHandler) GetDriverDetail(c echo.Context) error {
+	driverID := c.Param("driverId")
+	detail, appErr := h.users.GetDriverDetail(c.Request().Context(), driverID)
+	if appErr != nil {
+		return appErr
+	}
+	return c.JSON(http.StatusOK, echo.Map{"data": detail})
+}
+

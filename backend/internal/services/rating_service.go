@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
+	"meryata-souq/backend/internal/config"
 	"meryata-souq/backend/internal/models"
 	"meryata-souq/backend/internal/pkg/apperror"
 )
@@ -22,11 +24,12 @@ const postgresUniqueViolation = "23505"
 // ratings.order_id, with a friendly pre-check here so a duplicate attempt
 // gets a clear error rather than a raw constraint-violation message).
 type RatingService struct {
-	db *gorm.DB
+	db    *gorm.DB
+	cache *config.Cache
 }
 
-func NewRatingService(db *gorm.DB) *RatingService {
-	return &RatingService{db: db}
+func NewRatingService(db *gorm.DB, cache *config.Cache) *RatingService {
+	return &RatingService{db: db, cache: cache}
 }
 
 // Create records a rating for a delivered order, scoped to userID (only
@@ -92,5 +95,16 @@ func (s *RatingService) ListForDriver(ctx context.Context, driverID string) ([]m
 	if err := s.db.WithContext(ctx).Where("driver_id = ?", driverID).Order("created_at DESC").Find(&ratings).Error; err != nil {
 		return nil, apperror.Internal(fmt.Errorf("rating: list for driver: %w", err))
 	}
+
+	if s.cache != nil {
+		if anon, ok := s.cache.AppConfigBool("driver_ratings_anonymous"); ok && anon {
+			for i := range ratings {
+				ratings[i].OrderID = ""
+				ratings[i].UserID = ""
+				ratings[i].CreatedAt = ratings[i].CreatedAt.Truncate(24 * time.Hour)
+			}
+		}
+	}
+
 	return ratings, nil
 }

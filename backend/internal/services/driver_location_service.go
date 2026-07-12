@@ -123,3 +123,16 @@ func (s *DriverLocationService) AssertOrderAccess(ctx context.Context, orderID, 
 	}
 	return nil
 }
+
+// LogHistory appends a coordinate to the order_tracking_history table.
+func (s *DriverLocationService) LogHistory(ctx context.Context, orderID, driverID string, longitude, latitude, heading float64) *apperror.AppError {
+	err := s.db.WithContext(ctx).Exec(`
+		INSERT INTO order_tracking_history (order_id, driver_id, latitude, longitude, heading, recorded_at)
+		VALUES (?, ?, ?, ?, ?, now())
+	`, orderID, driverID, latitude, longitude, heading).Error
+	if err != nil {
+		return apperror.Internal(fmt.Errorf("driver_location: log history: %w", err))
+	}
+	return nil
+}
+

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -194,4 +195,169 @@ func (s *AdminUserService) SetPassword(ctx context.Context, userID, password str
 		return "", apperror.Internal(fmt.Errorf("admin_user: update password: %w", err))
 	}
 	return user.Role, nil
+}
+
+type DriverOrderDetail struct {
+	ID              string               `json:"id"`
+	Status          models.OrderStatus   `json:"status"`
+	PlacedAt        time.Time            `json:"placed_at"`
+	DeliveredAt     *time.Time           `json:"delivered_at,omitempty"`
+	SubtotalDisplay float64              `json:"subtotal_display"`
+	CurrencyCode    string               `json:"currency_code"`
+	Vendor          DriverOrderVendor    `json:"vendor"`
+	Customer        DriverOrderCustomer  `json:"customer"`
+	Rating          *DriverOrderRating   `json:"rating,omitempty"`
+	TrackingHistory []DriverOrderTracking `json:"tracking_history,omitempty"`
+}
+
+type DriverOrderVendor struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type DriverOrderCustomer struct {
+	ID        string `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Phone     string `json:"phone"`
+}
+
+type DriverOrderRating struct {
+	Score   int    `json:"score"`
+	Comment string `json:"comment"`
+}
+
+type DriverOrderTracking struct {
+	Latitude   float64   `json:"latitude"`
+	Longitude  float64   `json:"longitude"`
+	Heading    float64   `json:"heading"`
+	RecordedAt time.Time `json:"recorded_at"`
+}
+
+type DriverDetail struct {
+	User   models.User         `json:"user"`
+	Orders []DriverOrderDetail `json:"orders"`
+}
+
+type queryOrderRow struct {
+	ID              string             `gorm:"column:id"`
+	Status          models.OrderStatus `gorm:"column:status"`
+	PlacedAt        time.Time          `gorm:"column:placed_at"`
+	DeliveredAt     *time.Time         `gorm:"column:delivered_at"`
+	SubtotalDisplay float64            `gorm:"column:subtotal_display"`
+	CurrencyCode    string             `gorm:"column:currency_code"`
+	VendorID        string             `gorm:"column:vendor_id"`
+	VendorNameI18n  json.RawMessage    `gorm:"column:vendor_name_i18n"`
+	UserID          string             `gorm:"column:user_id"`
+	UserFirstName   *string            `gorm:"column:user_first_name"`
+	UserLastName    *string            `gorm:"column:user_last_name"`
+	UserPhone       string             `gorm:"column:user_phone"`
+	RatingScore     *int               `gorm:"column:rating_score"`
+	RatingComment   *string            `gorm:"column:rating_comment"`
+}
+
+func (s *AdminUserService) GetDriverDetail(ctx context.Context, driverID string) (*DriverDetail, *apperror.AppError) {
+	var driver models.User
+	if err := s.db.WithContext(ctx).Where("id = ? AND role = ?", driverID, models.RoleDriver).First(&driver).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperror.NotFound("driver not found")
+		}
+		return nil, apperror.Internal(fmt.Errorf("admin_user: get driver: %w", err))
+	}
+
+	var rows []queryOrderRow
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT o.id, o.status, o.placed_at, o.delivered_at, o.subtotal_display, o.currency_code,
+		       v.id as vendor_id, v.name_i18n as vendor_name_i18n,
+		       u.id as user_id, u.first_name as user_first_name, u.last_name as user_last_name, u.phone as user_phone,
+		       r.score as rating_score, r.comment as rating_comment
+		FROM orders o
+		JOIN vendors v ON o.vendor_id = v.id
+		JOIN users u ON o.user_id = u.id
+		LEFT JOIN ratings r ON o.id = r.order_id
+		WHERE o.driver_id = ?
+		ORDER BY o.placed_at DESC
+	`, driverID).Scan(&rows).Error
+	if err != nil {
+		return nil, apperror.Internal(fmt.Errorf("admin_user: get driver orders: %w", err))
+	}
+
+	ordersDetail := make([]DriverOrderDetail, 0, len(rows))
+	for _, row := range rows {
+		// Resolve vendor name from name_i18n JSON
+		var nameMap map[string]string
+		vendorName := ""
+		if err := json.Unmarshal(row.VendorNameI18n, &nameMap); err == nil {
+			if n, ok := nameMap["en"]; ok {
+				vendorName = n
+			} else if n, ok := nameMap["ar"]; ok {
+				vendorName = n
+			}
+		}
+		if vendorName == "" {
+			vendorName = "Vendor " + row.VendorID[:8]
+		}
+
+		custFN := ""
+		if row.UserFirstName != nil {
+			custFN = *row.UserFirstName
+		}
+		custLN := ""
+		if row.UserLastName != nil {
+			custLN = *row.UserLastName
+		}
+
+		var rating *DriverOrderRating
+		if row.RatingScore != nil {
+			rating = &DriverOrderRating{
+				Score:   *row.RatingScore,
+				Comment: "",
+			}
+			if row.RatingComment != nil {
+				rating.Comment = *row.RatingComment
+			}
+		}
+
+		// Load tracking history
+		var trackingRows []models.OrderTrackingHistory
+		if err := s.db.WithContext(ctx).Where("order_id = ?", row.ID).Order("recorded_at ASC").Find(&trackingRows).Error; err != nil {
+			return nil, apperror.Internal(fmt.Errorf("admin_user: get order tracking: %w", err))
+		}
+
+		tracking := make([]DriverOrderTracking, len(trackingRows))
+		for i, tRow := range trackingRows {
+			tracking[i] = DriverOrderTracking{
+				Latitude:   tRow.Latitude,
+				Longitude:  tRow.Longitude,
+				Heading:    tRow.Heading,
+				RecordedAt: tRow.RecordedAt,
+			}
+		}
+
+		ordersDetail = append(ordersDetail, DriverOrderDetail{
+			ID:              row.ID,
+			Status:          row.Status,
+			PlacedAt:        row.PlacedAt,
+			DeliveredAt:     row.DeliveredAt,
+			SubtotalDisplay: row.SubtotalDisplay,
+			CurrencyCode:    row.CurrencyCode,
+			Vendor: DriverOrderVendor{
+				ID:   row.VendorID,
+				Name: vendorName,
+			},
+			Customer: DriverOrderCustomer{
+				ID:        row.UserID,
+				FirstName: custFN,
+				LastName:  custLN,
+				Phone:     row.UserPhone,
+			},
+			Rating:          rating,
+			TrackingHistory: tracking,
+		})
+	}
+
+	return &DriverDetail{
+		User:   driver,
+		Orders: ordersDetail,
+	}, nil
 }

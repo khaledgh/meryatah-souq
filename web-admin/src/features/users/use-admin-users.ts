@@ -97,3 +97,49 @@ export function useVendorOwners() {
     },
   })
 }
+
+export interface DriverOrderDetail {
+  id: string
+  status: string
+  placed_at: string
+  delivered_at?: string
+  subtotal_display: number
+  currency_code: string
+  vendor: {
+    id: string
+    name: string
+  }
+  customer: {
+    id: string
+    first_name: string
+    last_name: string
+    phone: string
+  }
+  rating?: {
+    score: number
+    comment: string
+  }
+  tracking_history?: {
+    latitude: number
+    longitude: number
+    heading: number
+    recorded_at: string
+  }[]
+}
+
+export interface DriverDetailResponse {
+  user: any
+  orders: DriverOrderDetail[]
+}
+
+export function useDriverDetail(driverId: string | null) {
+  return useQuery({
+    queryKey: ['driver-detail', driverId],
+    queryFn: async () => {
+      const response = await apiClient.get(`/admin/drivers/${driverId}/details`)
+      return response.data.data as DriverDetailResponse
+    },
+    enabled: !!driverId,
+  })
+}
+

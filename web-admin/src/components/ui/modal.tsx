@@ -9,12 +9,13 @@ interface ModalProps {
   title: ReactNode
   description?: ReactNode
   children: ReactNode
+  className?: string
 }
 
 // A minimal, dependency-free modal — matches this codebase's preference for
 // small first-party components over a UI library (see DataTable's own
 // comment) since this is the first place the admin dashboard needs one.
-export function Modal({ open, onClose, title, description, children }: ModalProps) {
+export function Modal({ open, onClose, title, description, children, className }: ModalProps) {
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export function Modal({ open, onClose, title, description, children }: ModalProp
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900"
+        className={`relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900 ${className || 'max-w-lg'}`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4 dark:border-gray-800">
           <div>

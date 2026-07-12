@@ -38,7 +38,7 @@ export default function RootLayout() {
   const { setColorScheme } = useColorScheme()
 
   useEffect(() => {
-    setColorScheme('light')
+    setColorScheme('dark')
   }, [])
 
   // Icon fonts (Feather, Ionicons) are embedded natively via the expo-font
@@ -58,7 +58,7 @@ export default function RootLayout() {
           <AuthProvider>
             <DeliveryLocationProvider>
               <CartProvider>
-                <StatusBar style="dark" />
+                <StatusBar style="light" />
                 <Stack screenOptions={{ headerShown: false }} />
               </CartProvider>
             </DeliveryLocationProvider>

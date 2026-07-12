@@ -190,7 +190,7 @@ export default function HomeScreen() {
                     className="flex-1 items-center justify-center rounded-xl bg-brand-600 py-3 active:bg-brand-700"
                     style={{ opacity: acceptMutation.isPending ? 0.6 : 1 }}
                   >
-                    <Text className="text-sm font-bold text-white">{t('requests.accept')}</Text>
+                    <Text className="text-sm font-bold text-gray-950">{t('requests.accept')}</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => handleDecline(item.id)}

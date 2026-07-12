@@ -42,6 +42,43 @@ export default function OrderTrackingScreen() {
 
   const isOnTheWay = order?.status === 'on_the_way'
 
+  const [notification, setNotification] = useState<string | null>(null)
+  const prevStatusRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!order) return
+    const prevStatus = prevStatusRef.current
+    const currentStatus = order.status
+
+    if (prevStatus && prevStatus !== currentStatus) {
+      let msg = ''
+      switch (currentStatus) {
+        case 'accepted':
+          msg = t('orders.notificationAccepted', 'Store confirmed your order!')
+          break
+        case 'preparing':
+          msg = t('orders.notificationPreparing', 'Store started preparing your order!')
+          break
+        case 'on_the_way':
+          msg = t('orders.notificationOnTheWay', 'Driver is on the way with your order!')
+          break
+        case 'delivered':
+          msg = t('orders.notificationDelivered', 'Order delivered! Enjoy your meal.')
+          break
+        case 'cancelled':
+          msg = t('orders.notificationCancelled', 'Your order was cancelled.')
+          break
+      }
+      if (msg) {
+        setNotification(msg)
+        const timer = setTimeout(() => setNotification(null), 5000)
+        return () => clearTimeout(timer)
+      }
+    }
+
+    prevStatusRef.current = currentStatus
+  }, [order?.status])
+
   // The order payload carries the delivery point but not the store's, so the
   // vendor is fetched alongside it to draw the pickup end of the route.
   const { data: vendor } = useVendor(order?.vendor_id)
@@ -227,7 +264,7 @@ export default function OrderTrackingScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-        {isOnTheWay ? (
+        {pickup && dropoff && order ? (
           <View className="h-72 w-full bg-gray-100 dark:bg-gray-800 relative">
             <MapView style={{ width: '100%', height: '100%' }}>
               <Camera
@@ -265,46 +302,50 @@ export default function OrderTrackingScreen() {
               ) : null}
             </MapView>
 
-            <View className="absolute top-3 start-3 bg-black/60 rounded-full px-3 py-1.5 flex-row items-center gap-1.5">
-              <View className={`size-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'}`} />
-              <Text className="text-[10px] text-white font-bold uppercase">
-                {wsStatus === 'connected' ? t('orders.live', 'Live') : t('orders.disconnected', 'Connecting...')}
-              </Text>
-            </View>
+            {isOnTheWay && (
+              <>
+                <View className="absolute top-3 start-3 bg-black/60 rounded-full px-3 py-1.5 flex-row items-center gap-1.5">
+                  <View className={`size-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <Text className="text-[10px] text-white font-bold uppercase">
+                    {wsStatus === 'connected' ? t('orders.live', 'Live') : t('orders.disconnected', 'Connecting...')}
+                  </Text>
+                </View>
 
-            <View
-              className="absolute bottom-0 start-0 end-0 bg-white dark:bg-gray-900 px-5 py-4 flex-row items-center gap-3"
-              style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-            >
-              <View className="size-12 rounded-2xl items-center justify-center" style={{ backgroundColor: '#ffc20e22' }}>
-                <Feather name="truck" size={22} color="#ffc20e" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-xs text-gray-400 dark:text-gray-500">{t('orders.driverOnTheWay', 'Driver')}</Text>
-                <Text className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                  {route
-                    ? t('orders.arrivesIn', 'Arrives in {{eta}}', { eta: formatEta(route.duration_seconds) })
-                    : t('orders.driverHeading', 'On the way to you')}
-                </Text>
-              </View>
-            </View>
+                <View
+                  className="absolute bottom-0 start-0 end-0 bg-white dark:bg-gray-900 px-5 py-4 flex-row items-center gap-3"
+                  style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+                >
+                  <View className="size-12 rounded-2xl items-center justify-center" style={{ backgroundColor: '#ffc20e22' }}>
+                    <Feather name="truck" size={22} color="#ffc20e" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-xs text-gray-400 dark:text-gray-500">{t('orders.driverOnTheWay', 'Driver')}</Text>
+                    <Text className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {route
+                        ? t('orders.arrivesIn', 'Arrives in {{eta}}', { eta: formatEta(route.duration_seconds) })
+                        : t('orders.driverHeading', 'On the way to you')}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
-        ) : (
-          <View className="p-5 bg-white dark:bg-gray-900 items-center py-8 mx-4 my-4 rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 }}>
-            <View
-              className="size-16 rounded-full items-center justify-center mb-3"
-              style={{ backgroundColor: isCancelled ? '#fee2e2' : '#ffc20e22' }}
-            >
-              <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#ffc20e'} />
-            </View>
-            <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {isCancelled ? t('orders.statusCancelledMsg', 'Order Cancelled') : steps[currentStep]?.label}
-            </Text>
-            <Text className="text-sm text-gray-500 mt-1 dark:text-gray-400 text-center max-w-[240px]">
-              {isCancelled ? t('orders.statusCancelledDesc', 'Your order was cancelled.') : steps[currentStep]?.desc}
-            </Text>
+        ) : null}
+
+        <View className="p-5 bg-white dark:bg-gray-900 items-center py-8 mx-4 my-4 rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 }}>
+          <View
+            className="size-16 rounded-full items-center justify-center mb-3"
+            style={{ backgroundColor: isCancelled ? '#fee2e2' : '#ffc20e22' }}
+          >
+            <Feather name={isCancelled ? 'x-circle' : 'package'} size={32} color={isCancelled ? '#ef4444' : '#ffc20e'} />
           </View>
-        )}
+          <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {isCancelled ? t('orders.statusCancelledMsg', 'Order Cancelled') : steps[currentStep]?.label}
+          </Text>
+          <Text className="text-sm text-gray-500 mt-1 dark:text-gray-400 text-center max-w-[240px]">
+            {isCancelled ? t('orders.statusCancelledDesc', 'Your order was cancelled.') : steps[currentStep]?.desc}
+          </Text>
+        </View>
 
         {!isCancelled && (
           <View className="mx-4 my-2 bg-white dark:bg-gray-900 rounded-3xl p-5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }}>
@@ -417,6 +458,16 @@ export default function OrderTrackingScreen() {
           </View>
         )}
       </ScrollView>
+
+      {notification && (
+        <View className="absolute top-16 left-4 right-4 z-50 bg-[#ffc20e] p-4 rounded-2xl flex-row items-center gap-3 shadow-lg border border-[#e0a800]">
+          <Feather name="bell" size={20} color="#1a1a1a" />
+          <Text className="text-sm font-bold text-gray-900 flex-1">{notification}</Text>
+          <Pressable onPress={() => setNotification(null)}>
+            <Feather name="x" size={16} color="#1a1a1a" />
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   )
 }

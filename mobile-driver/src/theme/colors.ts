@@ -18,16 +18,17 @@ export const brand = {
 }
 
 export const gray = {
-  50: '#F9FAFB',
-  100: '#F3F4F6',
-  200: '#E5E7EB',
-  300: '#D1D5DB',
-  400: '#9CA3AF',
-  500: '#6B7280',
-  600: '#4B5563',
-  700: '#374151',
-  800: '#1F2937',
-  950: '#030712',
+  50: '#f8fafc',
+  100: '#f1f5f9',
+  200: '#e2e8f0',
+  300: '#cbd5e1',
+  400: '#9ca3af',
+  500: '#64748b',
+  600: '#475569',
+  700: '#334155',
+  800: '#252b44',
+  900: '#1e2235',
+  950: '#0f111a',
 }
 
 // Semantic tokens used across screens for things that aren't the primary

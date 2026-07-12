@@ -128,6 +128,20 @@ func (c *Cache) AppConfigString(key string) (string, bool) {
 	return s, true
 }
 
+// AppConfigBool unmarshals a JSON-boolean app_configs value.
+func (c *Cache) AppConfigBool(key string) (bool, bool) {
+	v, ok := c.AppConfig(key)
+	if !ok {
+		return false, false
+	}
+	var b bool
+	if err := json.Unmarshal(v.Value, &b); err != nil {
+		return false, false
+	}
+	return b, true
+}
+
+
 func (c *Cache) FeatureFlag(key string) (models.FeatureFlag, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

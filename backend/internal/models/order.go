@@ -53,3 +53,16 @@ type OrderItem struct {
 }
 
 func (OrderItem) TableName() string { return "order_items" }
+
+type OrderTrackingHistory struct {
+	ID         string    `gorm:"column:id;primaryKey" json:"id"`
+	OrderID    string    `gorm:"column:order_id;not null" json:"order_id"`
+	DriverID   string    `gorm:"column:driver_id;not null" json:"driver_id"`
+	Latitude   float64   `gorm:"column:latitude;not null" json:"latitude"`
+	Longitude  float64   `gorm:"column:longitude;not null" json:"longitude"`
+	Heading    float64   `gorm:"column:heading;default:0" json:"heading"`
+	RecordedAt time.Time `gorm:"column:recorded_at;not null" json:"recorded_at"`
+}
+
+func (OrderTrackingHistory) TableName() string { return "order_tracking_history" }
+

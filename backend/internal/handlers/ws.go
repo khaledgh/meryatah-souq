@@ -167,6 +167,9 @@ func (h *WSHandler) publishDriverLocation(ctx context.Context, orderID, driverID
 	if appErr := h.locations.Upsert(ctx, driverID, lon, lat, heading); appErr != nil {
 		return appErr
 	}
+	// Log tracking history
+	_ = h.locations.LogHistory(ctx, orderID, driverID, lon, lat, heading)
+
 	payload, err := json.Marshal(map[string]any{
 		"type":      "driver_location",
 		"longitude": lon,

@@ -20,11 +20,11 @@ export function FoodProductCard({ product, accentColor, onPress, onAdd }: Produc
         alignItems: 'center',
         gap: 14,
         borderRadius: 20,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#1e2235',
         padding: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07,
+        shadowOpacity: 0.18,
         shadowRadius: 8,
         elevation: 3,
       }}
@@ -36,7 +36,7 @@ export function FoodProductCard({ product, accentColor, onPress, onAdd }: Produc
           height: 86,
           borderRadius: 16,
           overflow: 'hidden',
-          backgroundColor: '#f3f4f6',
+          backgroundColor: '#252b44',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
@@ -46,10 +46,10 @@ export function FoodProductCard({ product, accentColor, onPress, onAdd }: Produc
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         ) : (
-          <Feather name="image" size={28} color="#d1d5db" />
+          <Feather name="image" size={28} color="#4b5563" />
         )}
         {!hasStock && (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
               {t('product.outOfStock', 'Out of stock')}
             </Text>
@@ -59,10 +59,10 @@ export function FoodProductCard({ product, accentColor, onPress, onAdd }: Produc
 
       {/* Info */}
       <View style={{ flex: 1, gap: 3 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#f9fafb' }} numberOfLines={1}>
           {productDisplayName(product, i18n.language)}
         </Text>
-        <Text style={{ fontSize: 11, color: '#6b7280', lineHeight: 15 }} numberOfLines={2}>
+        <Text style={{ fontSize: 11, color: '#9ca3af', lineHeight: 15 }} numberOfLines={2}>
           {productDisplayDescription(product, i18n.language)}
         </Text>
         <Text style={{ fontSize: 15, fontWeight: '800', color: accent, marginTop: 3 }}>
@@ -80,11 +80,11 @@ export function FoodProductCard({ product, accentColor, onPress, onAdd }: Produc
           borderRadius: 19,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: hasStock ? accent : '#e5e7eb',
+          backgroundColor: hasStock ? accent : '#252b44',
           flexShrink: 0,
         }}
       >
-        <Feather name="plus" size={20} color={hasStock ? '#1a1a1a' : '#9ca3af'} />
+        <Feather name="plus" size={20} color={hasStock ? '#1a1a1a' : '#6b7280'} />
       </Pressable>
     </Pressable>
   )

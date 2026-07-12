@@ -60,6 +60,20 @@ func main() {
 		log.Fatalf("postgis: %v", err)
 	}
 
+	// Run GORM AutoMigrate to ensure new tables like order_tracking_history exist on startup
+	if err := db.AutoMigrate(&models.OrderTrackingHistory{}); err != nil {
+		log.Fatalf("database auto-migrate: %v", err)
+	}
+
+	// Insert default driver_ratings_anonymous configuration if not present
+	if err := db.Exec(`
+		INSERT INTO app_configs (key, value, description)
+		VALUES ('driver_ratings_anonymous', 'false', 'Hide order and store details from driver ratings (anonymous reviews).')
+		ON CONFLICT (key) DO NOTHING
+	`).Error; err != nil {
+		log.Printf("warning: failed to seed default driver_ratings_anonymous config: %v", err)
+	}
+
 	redisClient, err := config.NewRedis(cfg.RedisURL)
 	if err != nil {
 		log.Fatalf("redis: %v", err)
@@ -341,7 +355,7 @@ func main() {
 	vendorOwn.GET("/:id/coupons", couponHandler.ListForVendor)
 	vendorOwn.PUT("/:id/coupons/:couponId/active", couponHandler.SetActiveForVendor)
 
-	ratingService := services.NewRatingService(db)
+	ratingService := services.NewRatingService(db, cache)
 	ratingHandler := handlers.NewRatingHandler(ratingService)
 	userGroup.POST("/orders/:orderId/rating", ratingHandler.Create)
 	driverGroup.GET("/ratings", ratingHandler.ListMyRatings)
@@ -352,6 +366,7 @@ func main() {
 	admin.POST("/users", adminUserHandler.CreateUser)
 	admin.GET("/drivers", adminUserHandler.ListDrivers)
 	admin.POST("/drivers", adminUserHandler.CreateDriver)
+	admin.GET("/drivers/:driverId/details", adminUserHandler.GetDriverDetail)
 	admin.PUT("/users/:userId/active", adminUserHandler.SetActive)
 	admin.PUT("/users/:userId/password", adminUserHandler.SetPassword)
 	admin.POST("/users/:userId/reset-lockout", adminUserHandler.ResetLockout)

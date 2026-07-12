@@ -178,7 +178,7 @@ export default function WelcomeScreen() {
                 height: 8,
                 width: activeIndex === i ? 24 : 8,
                 borderRadius: 4,
-                backgroundColor: activeIndex === i ? '#ffc20e' : '#e5e7eb',
+                backgroundColor: activeIndex === i ? '#ffc20e' : '#252b44',
               }}
             />
           ))}
