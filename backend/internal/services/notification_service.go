@@ -195,6 +195,68 @@ func (s *NotificationService) NotifyNewOrderForDrivers(ctx context.Context, vend
 	s.enqueue(playerIDsOf(tokens), "", body)
 }
 
+// NotifyDriverAssigned sends a push notification to the customer when a driver accepts the order.
+func (s *NotificationService) NotifyDriverAssigned(ctx context.Context, order *models.Order, driverName string) {
+	tokens, err := s.pushTokensForUser(ctx, order.UserID)
+	if err != nil {
+		log.Printf("notification: load push tokens for user %s: %v", order.UserID, err)
+		return
+	}
+	if len(tokens) == 0 {
+		return
+	}
+
+	locale := s.userLocale(ctx, order.UserID)
+	body := s.i18n.TranslateFor(ctx, locale, "push", "driver_assigned",
+		fmt.Sprintf("Driver %s has accepted your order!", driverName))
+	s.enqueue(playerIDsOf(tokens), "", body)
+}
+
+// NotifyDriverArriving sends a proximity push notification to the customer when the driver is close to home.
+func (s *NotificationService) NotifyDriverArriving(ctx context.Context, order *models.Order) {
+	tokens, err := s.pushTokensForUser(ctx, order.UserID)
+	if err != nil {
+		log.Printf("notification: load push tokens for user %s: %v", order.UserID, err)
+		return
+	}
+	if len(tokens) == 0 {
+		return
+	}
+
+	locale := s.userLocale(ctx, order.UserID)
+	body := s.i18n.TranslateFor(ctx, locale, "push", "driver_arriving",
+		"Your driver is arriving soon! Please prepare to receive your order.")
+	s.enqueue(playerIDsOf(tokens), "", body)
+}
+
+// NotifyNewOrderForVendor sends a push notification to the vendor owner when a new order is pending.
+func (s *NotificationService) NotifyNewOrderForVendor(ctx context.Context, order *models.Order) {
+	var ownerUserID string
+	err := s.db.WithContext(ctx).Raw(`SELECT owner_user_id FROM vendors WHERE id = ?`, order.VendorID).Row().Scan(&ownerUserID)
+	if err != nil {
+		log.Printf("notification: load vendor owner for vendor %s: %v", order.VendorID, err)
+		return
+	}
+	if ownerUserID == "" {
+		return
+	}
+
+	tokens, err := s.pushTokensForUser(ctx, ownerUserID)
+	if err != nil {
+		log.Printf("notification: load push tokens for vendor owner %s: %v", ownerUserID, err)
+		return
+	}
+	if len(tokens) == 0 {
+		return
+	}
+
+	locale := s.userLocale(ctx, ownerUserID)
+	body := s.i18n.TranslateFor(ctx, locale, "push", "new_order_pending",
+		fmt.Sprintf("New order #%s received! Please open the app to check it.", order.ID[0:8]))
+	s.enqueue(playerIDsOf(tokens), "", body)
+}
+
+
 // BroadcastToAudience fans out an admin-authored push to every push token
 // for the given role, or every push token if role is empty (blueprint
 // §11.A14: "audience (role/all), title/body per locale"). Per-locale text

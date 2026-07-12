@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"meryata-souq/backend/internal/pkg/apperror"
@@ -126,10 +127,11 @@ func (s *DriverLocationService) AssertOrderAccess(ctx context.Context, orderID, 
 
 // LogHistory appends a coordinate to the order_tracking_history table.
 func (s *DriverLocationService) LogHistory(ctx context.Context, orderID, driverID string, longitude, latitude, heading float64) *apperror.AppError {
+	id := uuid.New().String()
 	err := s.db.WithContext(ctx).Exec(`
-		INSERT INTO order_tracking_history (order_id, driver_id, latitude, longitude, heading, recorded_at)
-		VALUES (?, ?, ?, ?, ?, now())
-	`, orderID, driverID, latitude, longitude, heading).Error
+		INSERT INTO order_tracking_history (id, order_id, driver_id, latitude, longitude, heading, recorded_at)
+		VALUES (?, ?, ?, ?, ?, ?, now())
+	`, id, orderID, driverID, latitude, longitude, heading).Error
 	if err != nil {
 		return apperror.Internal(fmt.Errorf("driver_location: log history: %w", err))
 	}

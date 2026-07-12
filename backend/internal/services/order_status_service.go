@@ -136,6 +136,20 @@ func (s *OrderService) AssignDriver(ctx context.Context, orderID, driverID strin
 		return apperror.Internal(fmt.Errorf("order: assign driver: %w", result.Error))
 	}
 	if result.RowsAffected > 0 {
+		if s.notifications != nil {
+			go func() {
+				ctxTodo := context.Background()
+				order, err := s.loadOrder(ctxTodo, orderID)
+				if err == nil {
+					var driverName string
+					_ = s.db.Raw(`SELECT first_name || ' ' || last_name FROM users WHERE id = ?`, driverID).Row().Scan(&driverName)
+					if driverName == "" {
+						driverName = "A driver"
+					}
+					s.notifications.NotifyDriverAssigned(ctxTodo, order, driverName)
+				}
+			}()
+		}
 		return nil
 	}
 

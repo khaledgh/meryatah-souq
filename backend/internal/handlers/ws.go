@@ -3,33 +3,52 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 
 	appmw "meryata-souq/backend/internal/middleware"
+	"meryata-souq/backend/internal/models"
 	"meryata-souq/backend/internal/pkg/apperror"
 	"meryata-souq/backend/internal/services"
 	"meryata-souq/backend/internal/ws"
 )
 
 type WSHandler struct {
-	hub       *ws.Hub
-	locations *services.DriverLocationService
-	tickets   *services.WSTicketService
-	upgrader  websocket.Upgrader
+	hub           *ws.Hub
+	locations     *services.DriverLocationService
+	tickets       *services.WSTicketService
+	notifications *services.NotificationService
+	redis         *redis.Client
+	db            *gorm.DB
+	upgrader      websocket.Upgrader
 }
 
-func NewWSHandler(hub *ws.Hub, locations *services.DriverLocationService, tickets *services.WSTicketService, allowedOrigins []string) *WSHandler {
+func NewWSHandler(
+	hub *ws.Hub,
+	locations *services.DriverLocationService,
+	tickets *services.WSTicketService,
+	notifications *services.NotificationService,
+	redis *redis.Client,
+	db *gorm.DB,
+	allowedOrigins []string,
+) *WSHandler {
 	originSet := make(map[string]struct{}, len(allowedOrigins))
 	for _, o := range allowedOrigins {
 		originSet[o] = struct{}{}
 	}
 	return &WSHandler{
-		hub:       hub,
-		locations: locations,
-		tickets:   tickets,
+		hub:           hub,
+		locations:     locations,
+		tickets:       tickets,
+		notifications: notifications,
+		redis:         redis,
+		db:            db,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -170,6 +189,36 @@ func (h *WSHandler) publishDriverLocation(ctx context.Context, orderID, driverID
 	// Log tracking history
 	_ = h.locations.LogHistory(ctx, orderID, driverID, lon, lat, heading)
 
+	// Proximity check for arriving soon push notification
+	if h.db != nil && h.redis != nil && h.notifications != nil {
+		var order struct {
+			Status            string
+			DeliveryLongitude float64
+			DeliveryLatitude  float64
+			UserID            string
+		}
+		err := h.db.WithContext(ctx).Raw(`
+			SELECT status, user_id,
+			       ST_X(delivery_point::geometry) AS delivery_longitude,
+			       ST_Y(delivery_point::geometry) AS delivery_latitude
+			FROM orders WHERE id = ?
+		`, orderID).Scan(&order).Error
+		if err == nil && order.Status == "on_the_way" {
+			dist := distanceMeters(lat, lon, order.DeliveryLatitude, order.DeliveryLongitude)
+			if dist < 300 {
+				redisKey := "order:proximity-notified:" + orderID
+				notified, redisErr := h.redis.Exists(ctx, redisKey).Result()
+				if redisErr == nil && notified == 0 {
+					_ = h.redis.Set(ctx, redisKey, "true", 2*time.Hour).Err()
+					h.notifications.NotifyDriverArriving(ctx, &models.Order{
+						ID:     orderID,
+						UserID: order.UserID,
+					})
+				}
+			}
+		}
+	}
+
 	payload, err := json.Marshal(map[string]any{
 		"type":      "driver_location",
 		"longitude": lon,
@@ -184,6 +233,17 @@ func (h *WSHandler) publishDriverLocation(ctx context.Context, orderID, driverID
 	// GET /orders/:orderId/driver-location.
 	_ = h.hub.Broadcast(ctx, orderID, payload)
 	return nil
+}
+
+func distanceMeters(lat1, lon1, lat2, lon2 float64) float64 {
+	const r = 6371000 // Earth radius in meters
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLon := (lon2 - lon1) * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return r * c
 }
 
 type reportLocationRequest struct {

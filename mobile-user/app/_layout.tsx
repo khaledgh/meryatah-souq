@@ -28,6 +28,11 @@ const queryClient = new QueryClient({
   },
 })
 
+const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID
+if (ONESIGNAL_APP_ID) {
+  OneSignal.initialize(ONESIGNAL_APP_ID)
+}
+
 SplashScreen.preventAutoHideAsync()
 
 function LocaleBootstrap() {
@@ -43,9 +48,7 @@ export default function RootLayout() {
   }, [])
 
   useEffect(() => {
-    const appId = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID
-    if (appId) {
-      OneSignal.initialize(appId)
+    if (ONESIGNAL_APP_ID) {
       OneSignal.Notifications.requestPermission(true)
     }
   }, [])

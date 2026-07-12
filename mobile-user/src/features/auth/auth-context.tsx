@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (user) {
+    if (user && process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID) {
       const registerToken = (subId: string | null | undefined) => {
         if (subId) {
           apiClient.post('/push-tokens', {
@@ -93,8 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const currentId = OneSignal.User.pushSubscription.getPushSubscriptionId()
-      registerToken(currentId)
+      OneSignal.User.pushSubscription.getIdAsync()
+        .then((id) => registerToken(id))
+        .catch(() => {})
 
       const listener = (event: { current: { id?: string | null } }) => {
         registerToken(event.current.id)

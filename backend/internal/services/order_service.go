@@ -148,6 +148,7 @@ func (s *OrderService) PlaceOrder(ctx context.Context, in PlaceOrderInput) (*mod
 
 	if s.notifications != nil {
 		s.notifications.NotifyNewOrderForDrivers(ctx, s.vendorDisplayName(ctx, in.VendorID))
+		s.notifications.NotifyNewOrderForVendor(ctx, order)
 	}
 
 	return order, nil

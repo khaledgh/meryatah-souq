@@ -295,7 +295,7 @@ func main() {
 
 	driverLocationService := services.NewDriverLocationService(db)
 	wsTicketService := services.NewWSTicketService(redisClient)
-	wsHandler := handlers.NewWSHandler(hub, driverLocationService, wsTicketService, cfg.CORSOrigins)
+	wsHandler := handlers.NewWSHandler(hub, driverLocationService, wsTicketService, notificationService, redisClient, db, cfg.CORSOrigins)
 	v1.POST("/ws/ticket", wsHandler.IssueTicket, requireAuth)
 	v1.GET("/ws/orders/:orderId/track", wsHandler.TrackOrder)
 	// Last-known driver position, so a client opening the tracking map isn't
