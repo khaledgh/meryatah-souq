@@ -105,8 +105,10 @@ func (s *DriverLocationService) AssertOrderAccess(ctx context.Context, orderID, 
 
 	switch role {
 	case "driver":
-		if driverID == nil || *driverID != userID {
-			return apperror.Forbidden("not the assigned driver for this order")
+		isCustomer := ownerUserID == userID
+		isDriver := driverID != nil && *driverID == userID
+		if !isCustomer && !isDriver {
+			return apperror.Forbidden("not the assigned driver or customer for this order")
 		}
 	case "vendor_owner":
 		var vendorOwnerUserID string

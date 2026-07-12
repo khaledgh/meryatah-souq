@@ -167,6 +167,8 @@
     "coupons": "الكوبونات والعروض",
     "savedAddresses": "العناوين المحفوظة",
     "addressesUnavailable": "ستتوفر العناوين المحفوظة في الإصدار القادم.",
-    "logoutBtn": "تسجيل الخروج"
+    "logoutBtn": "تسجيل الخروج",
+    "switchToDriver": "الانتقال إلى تطبيق السائق",
+    "driverAppNotInstalled": "تطبيق السائق غير مثبت."
   }
 }

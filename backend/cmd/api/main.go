@@ -248,7 +248,7 @@ func main() {
 
 	v1.GET("/vendors/:id/scheduling/slots", orderHandler.AvailableSlots)
 
-	requireUser := appmw.RequireRole(string(models.RoleUser))
+	requireUser := appmw.RequireRole(string(models.RoleUser), string(models.RoleDriver))
 	userGroup := v1.Group("/user", requireAuth, requireUser)
 	userGroup.POST("/orders", orderHandler.PlaceOrder)
 	userGroup.GET("/orders", orderHandler.ListMyOrders)

@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
         const parsed = authUserSchema.safeParse(refreshed.user)
-        if (!parsed.success || parsed.data.role !== 'user') {
-          // Same guard as verifyOtp: a driver/vendor phone must not hold a
+        if (!parsed.success || (parsed.data.role !== 'user' && parsed.data.role !== 'driver')) {
+          // Same guard as verifyOtp: a vendor phone must not hold a
           // session here — every /user/* call would 403.
           await clearSession()
           setIsGuest(await getGuestMode())
@@ -87,9 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const parsed = verifyOtpResponseSchema.parse(response.data)
 
     if (parsed.status === 'login' && parsed.access_token && parsed.refresh_token && parsed.user) {
-      if (parsed.user.role !== 'user') {
-        // Do not persist any session for a non-user account (e.g. a driver
-        // or vendor phone reused here) — every /user/* call would 403
+      if (parsed.user.role !== 'user' && parsed.user.role !== 'driver') {
+        // Do not persist any session for a non-user/non-driver account (e.g. a
+        // vendor phone reused here) — every /user/* call would 403
         // anyway, so fail fast at login instead of leaving the app in a
         // broken logged-in-but-nothing-works state.
         return { kind: 'not_a_user' }

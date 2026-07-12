@@ -159,6 +159,8 @@
     "coupons": "Coupons & Offers",
     "savedAddresses": "Saved Addresses",
     "addressesUnavailable": "Saved addresses will be available in the next release.",
-    "logoutBtn": "Logout"
+    "logoutBtn": "Logout",
+    "switchToDriver": "Switch to Driver App",
+    "driverAppNotInstalled": "Driver App is not installed."
   }
 }
